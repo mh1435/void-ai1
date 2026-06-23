@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupNav();
   setupSettingsPanels();
   setupThemePicker();
-  setupDashboard();
+  setupGameHub();
   setupCanvas();
   setupAssistant();
   setupChat();
@@ -406,46 +406,217 @@ function closeAllPanels() {
 
 /* ============ Dashboard ============ */
 
-function setupDashboard() {
-  const d = new Date();
-  const hour = d.getHours();
-  document.getElementById('greeting').textContent =
-    hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
-  document.getElementById('today-date').textContent =
-    d.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+/* ============ Gaming Hub (dashboard replacement) ============ */
+
+// Generic structure so new games/entries can be added without touching
+// any rendering logic — just append to this object.
+const GAMES_DB = {
+  mlbb: {
+    name: 'Mobile Legends',
+    short: 'MLBB',
+    characters: [
+      { name: 'Fanny', tag: 'Assassin' },
+      { name: 'Granger', tag: 'Marksman' },
+      { name: 'Lancelot', tag: 'Assassin' },
+      { name: 'Angela', tag: 'Support' },
+      { name: 'Tigreal', tag: 'Tank' },
+      { name: 'Gusion', tag: 'Assassin' },
+    ],
+    weapons: [
+      { name: 'Blade of Despair', tag: 'Physical' },
+      { name: 'Clock of Destiny', tag: 'Magic' },
+      { name: "Demon Hunter Sword", tag: 'Physical' },
+      { name: 'Holy Crystal', tag: 'Magic' },
+    ],
+    maps: [
+      { name: 'Land of Dawn', tag: '5v5' },
+      { name: 'Mines of Glory', tag: 'Brawl' },
+    ],
+  },
+  freefire: {
+    name: 'Free Fire',
+    short: 'FF',
+    characters: [
+      { name: 'Alok', tag: 'Support' },
+      { name: 'Chrono', tag: 'Defense' },
+      { name: 'K', tag: 'Hybrid' },
+      { name: 'Kelly', tag: 'Speed' },
+      { name: 'Wukong', tag: 'Stealth' },
+    ],
+    weapons: [
+      { name: 'M1014', tag: 'Shotgun' },
+      { name: 'AWM', tag: 'Sniper' },
+      { name: 'Groza', tag: 'Assault Rifle' },
+      { name: 'MP40', tag: 'SMG' },
+    ],
+    maps: [
+      { name: 'Bermuda', tag: 'Battle Royale' },
+      { name: 'Purgatory', tag: 'Battle Royale' },
+      { name: 'Kalahari', tag: 'Clash Squad' },
+    ],
+  },
+};
+
+const HubState = {
+  activeGame: null,
+  activeTab: 'characters',
+};
+
+function setupGameHub() {
+  renderGameRail();
+  setupInfoTabs();
+  HubState.activeGame = Object.keys(GAMES_DB)[0];
+  renderInfoGrid();
+  setupSkyBand();
 }
 
+function renderGameRail() {
+  const rail = document.getElementById('game-rail');
+  rail.innerHTML = '';
+  Object.entries(GAMES_DB).forEach(([id, game], i) => {
+    const tile = document.createElement('button');
+    tile.className = 'game-tile' + (i === 0 ? ' active' : '');
+    tile.dataset.game = id;
+    tile.innerHTML = `
+      <div class="game-tile-icon">${game.short}</div>
+      <div class="game-tile-label">${game.name}</div>
+    `;
+    tile.addEventListener('click', () => {
+      document.querySelectorAll('.game-tile').forEach(t => t.classList.remove('active'));
+      tile.classList.add('active');
+      HubState.activeGame = id;
+      renderInfoGrid();
+    });
+    rail.appendChild(tile);
+  });
+}
+
+function setupInfoTabs() {
+  document.querySelectorAll('.info-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.info-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      HubState.activeTab = tab.dataset.tab;
+      renderInfoGrid();
+    });
+  });
+}
+
+function renderInfoGrid() {
+  const grid = document.getElementById('info-grid');
+  const game = GAMES_DB[HubState.activeGame];
+  if (!game) { grid.innerHTML = ''; return; }
+
+  const entries = game[HubState.activeTab] || [];
+  if (entries.length === 0) {
+    grid.innerHTML = `<div class="info-grid-empty">No ${HubState.activeTab} listed yet for ${game.name}.</div>`;
+    return;
+  }
+
+  grid.innerHTML = entries.map(entry => `
+    <div class="info-card">
+      <div class="info-card-thumb">${entry.name.slice(0, 2).toUpperCase()}</div>
+      <div class="info-card-name">${entry.name}</div>
+      <div class="info-card-tag">${entry.tag}</div>
+    </div>
+  `).join('');
+}
+
+/* ---------- Sky band: live weather, automatic on load ---------- */
+
+// WMO weather codes (from Open-Meteo) bucketed into visual states.
+function weatherCodeToVisualState(code, isDay) {
+  if (code === 0 || code === 1) return isDay ? 'clear-day' : 'clear-night';
+  if (code === 2 || code === 3) return 'clouds';
+  if (code === 45 || code === 48) return 'fog';
+  if ([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82].includes(code)) return 'rain';
+  if ([71, 73, 75, 77, 85, 86].includes(code)) return 'snow';
+  if ([95, 96, 99].includes(code)) return 'storm';
+  return isDay ? 'clear-day' : 'clear-night';
+}
+
+function setupSkyBand() {
+  document.getElementById('sky-refresh').addEventListener('click', () => {
+    if (App.location) {
+      loadSkyWeather(App.location.lat, App.location.lon);
+    } else {
+      requestSkyLocation();
+    }
+  });
+
+  if (App.location) {
+    document.getElementById('sky-place').textContent = App.location.label;
+    loadSkyWeather(App.location.lat, App.location.lon);
+  } else {
+    requestSkyLocation();
+  }
+}
+
+function requestSkyLocation() {
+  const placeEl = document.getElementById('sky-place');
+  if (!navigator.geolocation) {
+    placeEl.textContent = 'Location not supported';
+    return;
+  }
+
+  placeEl.textContent = 'Locating you…';
+
+  navigator.geolocation.getCurrentPosition(
+    async (pos) => {
+      const lat = pos.coords.latitude;
+      const lon = pos.coords.longitude;
+      let label = `${lat.toFixed(2)}, ${lon.toFixed(2)}`;
+
+      try {
+        const res = await fetch(`/api/reverse-geocode?lat=${lat}&lon=${lon}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.label) label = data.label;
+        }
+      } catch (e) { /* keep coordinate fallback */ }
+
+      App.location = { lat, lon, label };
+      placeEl.textContent = label;
+      loadSkyWeather(lat, lon);
+      addMapWidgetIfMissing();
+      refreshDashboard();
+    },
+    () => {
+      placeEl.textContent = 'Location unavailable';
+    },
+    { enableHighAccuracy: true, timeout: 10000 }
+  );
+}
+
+async function loadSkyWeather(lat, lon) {
+  const band = document.getElementById('sky-band');
+  try {
+    const res = await fetch(`/api/weather?lat=${lat}&lon=${lon}`);
+    if (!res.ok) throw new Error('weather fetch failed');
+    const w = await res.json();
+
+    const state = weatherCodeToVisualState(w.weather_code, w.is_day);
+    band.dataset.state = state;
+
+    document.getElementById('sky-temp').textContent = `${Math.round(w.temp)}°`;
+    document.getElementById('sky-desc').textContent = w.description || '—';
+    document.getElementById('sky-feels').textContent = `Feels like ${Math.round(w.feels_like)}°`;
+    if (w.temp_max !== undefined && w.temp_min !== undefined) {
+      document.getElementById('sky-range').textContent = `H: ${Math.round(w.temp_max)}°  L: ${Math.round(w.temp_min)}°`;
+    }
+  } catch (e) {
+    band.dataset.state = 'clouds';
+    document.getElementById('sky-desc').textContent = 'Weather unavailable';
+  }
+}
+
+function setupDashboard() {}
+
 function refreshDashboard() {
-  const s = App.stats;
-  document.getElementById('stat-total').textContent = s.totalInteractions;
-  document.getElementById('stat-convos').textContent = s.conversations;
-  document.getElementById('stat-trend').textContent = s.totalInteractions > 0 ? '100%' : '—';
-  document.getElementById('stat-active-chats').textContent = s.conversations;
-  document.getElementById('stat-messages').textContent = s.messages;
-  document.getElementById('stat-avg').textContent =
-    s.conversations ? `${Math.round(s.messages / s.conversations)} avg/chat` : '0 avg/chat';
-  document.getElementById('stat-queries').textContent = s.queries;
-  document.getElementById('stat-replies').textContent = s.replies;
-
-  const hasAnyKey = !!(App.settings.geminiKey || App.settings.groqKey || App.settings.apiKey);
-  const order = App.settings.providerOrder || ['gemini', 'groq', 'openrouter'];
-  const keyMap = { gemini: App.settings.geminiKey, groq: App.settings.groqKey, openrouter: App.settings.apiKey };
-  const activeProvider = order.find(p => keyMap[p]);
-  const providerLabels = { gemini: 'Gemini', groq: 'Groq', openrouter: 'OpenRouter' };
-
-  document.getElementById('status-model').textContent = hasAnyKey
-    ? `${providerLabels[activeProvider]} active`
-    : 'No API key set';
-  document.getElementById('status-check-icon').classList.toggle('ok', hasAnyKey);
-
-  document.getElementById('status-location').textContent = App.location
-    ? App.location.label
-    : 'Not requested';
-  document.getElementById('status-location-icon').classList.toggle('ok', !!App.location);
-
-  document.getElementById('tip-text').textContent = hasAnyKey
-    ? 'Try asking Void about the weather, or say "guide me to the nearest pharmacy."'
-    : 'Add a free API key in Settings (Gemini, Groq, or OpenRouter) to start chatting with Void.';
+  // The old dashboard's stat cards were replaced by the gaming hub.
+  // Usage stats are still tracked in App.stats for potential future use,
+  // but there's no longer a dashboard UI surface to push them into —
+  // kept as a safe no-op so existing call sites don't break.
 }
 
 /* ============ Canvas widgets (free drag + pan/zoom) ============ */

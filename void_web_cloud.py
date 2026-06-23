@@ -262,7 +262,7 @@ def fetch_weather_data(lat, lon):
         "https://api.open-meteo.com/v1/forecast"
         f"?latitude={lat}&longitude={lon}"
         "&current=temperature_2m,relative_humidity_2m,apparent_temperature,"
-        "wind_speed_10m,weather_code,surface_pressure"
+        "wind_speed_10m,weather_code,surface_pressure,is_day"
         "&daily=temperature_2m_max,temperature_2m_min,weather_code,precipitation_probability_max"
         "&timezone=auto&forecast_days=3"
     )
@@ -289,7 +289,9 @@ def fetch_weather_data(lat, lon):
             "humidity": round(current.get("relative_humidity_2m", 0)),
             "wind_speed": round(current.get("wind_speed_10m", 0), 1),
             "pressure": round(current.get("surface_pressure", 0)),
-            "description": weather_code_to_text(current.get("weather_code", 0))
+            "description": weather_code_to_text(current.get("weather_code", 0)),
+            "weather_code": current.get("weather_code", 0),
+            "is_day": bool(current.get("is_day", 1))
         },
         "daily": days
     }
@@ -572,7 +574,12 @@ class VoidRequestHandler(http.server.SimpleHTTPRequestHandler):
                 return
 
             weather = fetch_weather_data(lat, lon)
-            self._send_json(200, weather["current"])
+            result = dict(weather["current"])
+            if weather.get("daily"):
+                today = weather["daily"][0]
+                result["temp_max"] = today["temp_max"]
+                result["temp_min"] = today["temp_min"]
+            self._send_json(200, result)
 
         except Exception as e:
             print("Weather error:", e)
