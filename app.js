@@ -712,6 +712,77 @@ async function loadWeatherForWidget() {
 let recognizer = null;
 let isListening = false;
 
+// Deep links for a fixed set of common apps. Each can take an optional
+// query, used for search/play-style opens. Android intercepts these specific
+// URL patterns and routes them to the matching installed app; if the app
+// isn't installed, most fall back to opening the equivalent website instead.
+const APP_DEEP_LINKS = {
+  youtube: (q) => q
+    ? `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`
+    : `https://www.youtube.com`,
+  maps: (q) => q
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`
+    : `https://www.google.com/maps`,
+  spotify: (q) => q
+    ? `https://open.spotify.com/search/${encodeURIComponent(q)}`
+    : `https://open.spotify.com`,
+  whatsapp: (q) => q
+    ? `https://wa.me/?text=${encodeURIComponent(q)}`
+    : `https://web.whatsapp.com`,
+  instagram: () => `https://www.instagram.com`,
+  gmail: () => `https://mail.google.com`,
+  camera: () => null // handled specially below — no web deep link for this one
+};
+
+const OPEN_TAG_PATTERN = /\[\[OPEN:([a-z]+):([^\]]*)\]\]/i;
+
+/**
+ * Looks for a [[OPEN:app:query]] tag in the AI's reply, fires the matching
+ * deep link if found, and returns the reply text with the tag stripped out
+ * so it's never shown to the user.
+ */
+function processOpenAppTags(reply) {
+  const match = reply.match(OPEN_TAG_PATTERN);
+  if (!match) return reply;
+
+  const appId = match[1].toLowerCase();
+  const query = match[2].trim();
+  const cleanedReply = reply.replace(OPEN_TAG_PATTERN, '').trim();
+
+  if (appId === 'camera') {
+    // No universal web deep link for the camera app — best effort via a
+    // capture-intent file input click, which on most phones opens the
+    // camera picker directly.
+    const tempInput = document.createElement('input');
+    tempInput.type = 'file';
+    tempInput.accept = 'image/*';
+    tempInput.capture = 'environment';
+    tempInput.click();
+    return cleanedReply;
+  }
+
+  const linkBuilder = APP_DEEP_LINKS[appId];
+  if (linkBuilder) {
+    const url = linkBuilder(query);
+    if (url) window.open(url, '_blank');
+  }
+
+  return cleanedReply;
+}
+
+function resolveSpeechLang() {
+  // Explicit setting always wins.
+  if (App.settings.lang === 'ar') return 'ar-SA';
+  if (App.settings.lang === 'en') return 'en-US';
+
+  // 'auto' — follow the device/browser's own language rather than
+  // hardcoding English, so speech recognition actually listens for
+  // the language the person is likely to speak.
+  const deviceLang = navigator.language || navigator.userLanguage || 'en-US';
+  if (deviceLang.toLowerCase().startsWith('ar')) return 'ar-SA';
+  return deviceLang;
+}
+
 function setupAssistant() {
   const orb = document.getElementById('orb-btn');
   const hint = document.getElementById('assistant-hint');
@@ -733,7 +804,7 @@ function setupAssistant() {
     }
 
     recognizer = new SpeechRecognition();
-    recognizer.lang = App.settings.lang === 'ar' ? 'ar-SA' : 'en-US';
+    recognizer.lang = resolveSpeechLang();
     recognizer.interimResults = false;
 
     recognizer.onstart = () => {
@@ -750,8 +821,9 @@ function setupAssistant() {
       const transcript = event.results[0][0].transcript;
       line.textContent = `"${transcript}"`;
       const reply = await askVoid(transcript);
-      line.textContent = reply;
-      speak(reply);
+      const cleanedReply = processOpenAppTags(reply);
+      line.textContent = cleanedReply;
+      speak(cleanedReply);
     };
 
     recognizer.onerror = () => {
@@ -773,7 +845,7 @@ function setupAssistant() {
 function speak(text) {
   if (!window.speechSynthesis || !App.settings.voiceEnabled) return;
   const utter = new SpeechSynthesisUtterance(text);
-  utter.lang = App.settings.lang === 'ar' ? 'ar-SA' : 'en-US';
+  utter.lang = resolveSpeechLang();
   utter.rate = App.settings.voiceRate || 1.0;
   utter.pitch = App.settings.voicePitch || 1.0;
 
@@ -1124,8 +1196,9 @@ function setupChat() {
     const typingRow = addTypingIndicator();
     const reply = await askVoid(text, image);
     typingRow.remove();
-    const isError = /^(ERROR|HTTP \d|No API key|All configured providers failed|Connection lost|The model took too long|Network issue)/i.test(reply);
-    addChatMessage(isError ? 'ai error' : 'ai', reply);
+    const cleanedReply = processOpenAppTags(reply);
+    const isError = /^(ERROR|HTTP \d|No API key|All configured providers failed|Connection lost|The model took too long|Network issue)/i.test(cleanedReply);
+    addChatMessage(isError ? 'ai error' : 'ai', cleanedReply);
   });
 }
 
