@@ -1,6 +1,5 @@
 /* =========================================================
-   VOID — Core Application Logic Framework
-   Decoupled assets context strategy deployment configuration.
+   VOID // AI STUDIO SUITE SINGLE PAGE APPLICATION CONTROLLER
    ========================================================= */
 
 const App = {
@@ -18,13 +17,11 @@ const App = {
     mistralModel: 'mistral-large-latest',
     providerOrder: ['gemini', 'groq', 'together', 'mistral', 'openrouter'],
     activeProvider: 'openrouter',
+    activeModel: 'meta-llama/llama-3.2-3b-instruct:free',
     lang: 'auto',
     reducedMotion: false,
     responseMode: 'standard',
-    voiceEnabled: true,
-    voiceRate: 1.0,
-    voicePitch: 1.0,
-    voiceName: '',
+    voiceEnabled: false,
     floatingAssistantEnabled: false
   },
   stats: {
@@ -32,85 +29,60 @@ const App = {
     conversations: 1,
     messages: 0,
     queries: 0,
-    replies: 0
+    replies: 0,
+    tokens: 0,
+    hourlyTraffic: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
   },
   location: null,
-  modules: {}
+  prompts: [
+    { id: 'p1', title: 'Analytical Game Expert', category: 'Strategy', text: 'Act as a professional esport analyst. Break down the current strategy parameters.' },
+    { id: 'p2', title: 'Compile Framework Code', category: 'Development', text: 'Analyze software architecture designs and write production-ready source code.' }
+  ]
 };
 
-const panelHistory = [];
 const widgetPositions = {};
 
 document.addEventListener('DOMContentLoaded', () => {
-  adjustTopHeaderTitle();
   initNavigation();
   initSettingsLayout();
   initChatEngine();
   initWorkspaceGrid();
   initGameHubLayout();
+  initPromptLibrary();
+  initLogsFeed();
+  initAnalyticsMetrics();
   loadApplicationConfig();
 });
 
-/* --- Update Header Name --- */
-function adjustTopHeaderTitle() {
-  const topHeader = document.querySelector('.header-title, h1, #workspace-title');
-  if (topHeader) {
-    topHeader.textContent = "GAME HUB";
-  }
-}
-
-/* --- Controller Navigation Core --- */
+/* --- Navigation & Panel Orchestrator Routing --- */
 function initNavigation() {
   document.querySelectorAll('.tab-pill').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.tab-pill').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.view-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('#workspace-canvas-floor > .view-tab').forEach(t => t.classList.remove('active'));
+      
       btn.classList.add('active');
       const target = btn.getAttribute('data-target');
       const tNode = document.getElementById(target);
       if (tNode) tNode.classList.add('active');
+      
+      const topTitle = document.getElementById('workspace-title');
+      if (topTitle) topTitle.textContent = btn.textContent.replace(/▰|❖|⚙|📋|🔍|📊/g, '').trim();
     });
   });
 
   const openSettings = document.getElementById('open-settings-btn');
   const closeSettings = document.getElementById('close-settings-btn');
-  const vMain = document.getElementById('view-main');
   const vSet = document.getElementById('view-settings');
 
-  if (openSettings && closeSettings && vMain && vSet) {
-    openSettings.addEventListener('click', () => {
-      vMain.classList.remove('active');
-      vSet.classList.add('active');
-    });
-    closeSettings.addEventListener('click', () => {
-      vSet.classList.remove('active');
-      vMain.classList.add('active');
-      document.querySelectorAll('.settings-panel').forEach(p => p.classList.remove('active'));
-      panelHistory.length = 0;
-    });
+  if (openSettings && closeSettings && vSet) {
+    openSettings.addEventListener('click', () => { vSet.classList.add('active'); });
+    closeSettings.addEventListener('click', () => { vSet.classList.remove('active'); });
   }
 }
 
-/* --- Settings Sub Panels Management --- */
+/* --- System Application Preferences & Layout Actions --- */
 function initSettingsLayout() {
-  document.querySelectorAll('[data-open-panel]').forEach(item => {
-    item.addEventListener('click', () => {
-      const targetId = item.getAttribute('data-open-panel');
-      const panel = document.getElementById(targetId);
-      if (panel) {
-        panel.classList.add('active');
-        panelHistory.push(panel);
-      }
-    });
-  });
-
-  document.querySelectorAll('[data-close-panel]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const panel = panelHistory.pop();
-      if (panel) panel.classList.remove('active');
-    });
-  });
-
   document.getElementById('save-keys-btn')?.addEventListener('click', () => {
     App.settings.geminiKey = document.getElementById('input-gemini-key')?.value || '';
     App.settings.groqKey = document.getElementById('input-groq-key')?.value || '';
@@ -118,6 +90,7 @@ function initSettingsLayout() {
     App.settings.togetherKey = document.getElementById('input-together-key')?.value || '';
     App.settings.mistralKey = document.getElementById('input-mistral-key')?.value || '';
     persistSettingsToServer();
+    appendSystemEventLog('info', 'Auth keys securely synchronized across backend memory array.');
   });
 
   document.getElementById('save-models-btn')?.addEventListener('click', () => {
@@ -128,24 +101,29 @@ function initSettingsLayout() {
     App.settings.mistralModel = document.getElementById('input-mistral-model')?.value || 'mistral-large-latest';
     persistSettingsToServer();
     updateModelQuickSelectUI();
+    appendSystemEventLog('info', 'Inference model endpoints successfully updated.');
   });
-
-  document.querySelectorAll('.theme-swatch').forEach(swatch => {
-    swatch.addEventListener('click', () => {
-      document.querySelectorAll('.theme-swatch').forEach(s => s.classList.remove('active'));
-      swatch.classList.add('active');
-      const variant = swatch.getAttribute('data-theme');
-      App.settings.theme = variant;
-      document.body.setAttribute('data-theme-variant', variant);
-      persistSettingsToServer();
-    });
+  
+  document.getElementById('save-preferences-btn')?.addEventListener('click', () => {
+    App.settings.voiceEnabled = document.getElementById('chk-speech')?.checked || false;
+    App.settings.reducedMotion = document.getElementById('chk-motion')?.checked || false;
+    App.settings.floatingAssistantEnabled = document.getElementById('chk-float-assist')?.checked || false;
+    App.settings.responseMode = document.getElementById('select-response-mode')?.value || 'standard';
+    
+    const chosenTheme = document.getElementById('select-theme')?.value || 'frost';
+    App.settings.theme = chosenTheme;
+    document.body.setAttribute('data-theme-variant', chosenTheme);
+    
+    persistSettingsToServer();
+    appendSystemEventLog('info', 'System UI parameters and user preferences saved.');
   });
 }
 
-/* --- Inference Chat & Quick Switcher Engine --- */
+/* --- Chat Engine with Interactive Multi-Provider Switcher --- */
 function initChatEngine() {
   const chatInput = document.getElementById('chat-input');
   const sendBtn = document.getElementById('send-msg-btn');
+  const clearBtn = document.getElementById('clear-chat-btn');
   if (!chatInput || !sendBtn) return;
 
   const inputContainer = document.querySelector('.chat-input-container');
@@ -178,6 +156,14 @@ function initChatEngine() {
     }
   });
 
+  clearBtn?.addEventListener('click', () => {
+    const msgBox = document.getElementById('messages-box');
+    if (msgBox) {
+      msgBox.innerHTML = '';
+      appendSystemEventLog('warn', 'Chat window active thread session completely purged.');
+    }
+  });
+
   updateModelQuickSelectUI();
 }
 
@@ -188,6 +174,8 @@ function updateModelQuickSelectUI() {
   const modelsList = [
     { provider: 'gemini', label: 'GEMINI', name: App.settings.geminiModel },
     { provider: 'groq', label: 'GROQ', name: App.settings.groqModel },
+    { provider: 'together', label: 'TOGETHER', name: App.settings.togetherModel },
+    { provider: 'mistral', label: 'MISTRAL', name: App.settings.mistralModel },
     { provider: 'openrouter', label: 'OPENROUTER', name: App.settings.model }
   ];
 
@@ -206,13 +194,15 @@ function updateModelQuickSelectUI() {
       const chosenProvider = pill.getAttribute('data-provider');
       App.settings.activeProvider = chosenProvider;
       
-      // Update running standard model references based on selected service provider context
       if (chosenProvider === 'openrouter') App.settings.activeModel = App.settings.model;
       if (chosenProvider === 'groq') App.settings.activeModel = App.settings.groqModel;
       if (chosenProvider === 'gemini') App.settings.activeModel = App.settings.geminiModel;
+      if (chosenProvider === 'together') App.settings.activeModel = App.settings.togetherModel;
+      if (chosenProvider === 'mistral') App.settings.activeModel = App.settings.mistralModel;
 
       persistSettingsToServer();
       updateModelQuickSelectUI();
+      appendSystemEventLog('info', `Active provider node set to: ${chosenProvider.toUpperCase()}`);
     });
   });
 }
@@ -226,34 +216,46 @@ function appendBubbleMessage(role, text) {
   const stamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   const label = role === 'user' ? 'USER::NODE' : 'VOID::CORE';
 
+  // Use the Marked library for rich markdown bubbles parsing
+  let renderedBody = '';
+  if (typeof marked !== 'undefined') {
+    renderedBody = marked.parse(text);
+  } else {
+    renderedBody = `<div class="bubble-body mutedmonospace">!! ERR_LIB_MISSING: Markup library load fail.</div>`;
+  }
+
   bNode.innerHTML = `
     <div class="bubble-meta">${label} // ${stamp}</div>
-    <div class="bubble-body">${parseMarkdownText(text)}</div>
+    <div class="bubble-body">${renderedBody}</div>
   `;
   box.appendChild(bNode);
   box.scrollTop = box.scrollHeight;
   
-  App.stats.messages++;
-  updateStatusDashboardLines();
-}
+  if (role === 'user') {
+    App.stats.queries++;
+    App.stats.messages++;
+  } else {
+    App.stats.replies++;
+  }
+  App.stats.totalInteractions++;
+  
+  const currentHour = new Date().getHours();
+  App.stats.hourlyTraffic[currentHour]++;
 
-function parseMarkdownText(raw) {
-  return raw
-    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-    .replace(/```([\s\S]+?)
-```/g, '<pre><code>$1</code></pre>')
-    .replace(/`([^`]+?)`/g, '<code>$1</code>')
-    .replace(/\*\*([\s\S]+?)\*\*/g, '<strong>$1</strong>');
+  updateStatusDashboardLines();
+  refreshAnalyticsVisuals();
 }
 
 function dispatchPromptToBackend(prompt) {
   const placeholder = document.createElement('div');
   placeholder.className = 'chat-bubble assistant';
-  placeholder.innerHTML = `<div class="bubble-meta">VOID::CORE // COMPUTING...</div><div class="bubble-body muted monospace">Executing pipeline loop via model node target...</div>`;
+  placeholder.innerHTML = `<div class="bubble-meta">VOID::CORE // INTERFACES</div><div class="bubble-body muted monospace">Computing network loop via active node profile context...</div>`;
   
   const box = document.getElementById('messages-box');
   box.appendChild(placeholder);
   box.scrollTop = box.scrollHeight;
+
+  appendSystemEventLog('info', `Dispatched API request payload to provider: [${App.settings.activeProvider}]`);
 
   fetch('/api/chat', {
     method: 'POST',
@@ -261,21 +263,29 @@ function dispatchPromptToBackend(prompt) {
     body: JSON.stringify({ 
       prompt,
       provider: App.settings.activeProvider,
-      model: App.settings.activeModel
+      model: App.settings.activeModel,
+      mode: App.settings.responseMode
     })
   })
   .then(r => r.json())
   .then(data => {
     placeholder.remove();
-    if (data.response) appendBubbleMessage('assistant', data.response);
+    if (data.response) {
+      appendBubbleMessage('assistant', data.response);
+      appendSystemEventLog('info', `Received response string from server. Token payload stats: ~${data.tokens || 120} tokens parsed.`);
+    } else {
+      appendBubbleMessage('assistant', '!! ERR_EMPTY_RESP: No data payload returned from the inference node endpoint.');
+      appendSystemEventLog('err', 'Remote server node responded with empty data structure payload.');
+    }
   })
-  .catch(() => {
+  .catch((err) => {
     placeholder.remove();
-    appendBubbleMessage('assistant', '!! NETWORK_TIMEOUT: Core context connection dropped.');
+    appendBubbleMessage('assistant', '!! ERR_CONNECTION: Offline response array logic pipeline required.');
+    appendSystemEventLog('err', `Dispatching to endpoint threw network connectivity exception: ${err}`);
   });
 }
 
-/* --- Workspace Monitor Widgets Layout --- */
+/* --- Draggable System Widgets Deck --- */
 function initWorkspaceGrid() {
   document.querySelectorAll('[data-add-widget]').forEach(btn => {
     btn.addEventListener('click', () => { spawnWorkspaceWidget(btn.getAttribute('data-add-widget')); });
@@ -290,14 +300,14 @@ function spawnWorkspaceWidget(type) {
   const card = document.createElement('div');
   card.className = 'dashboard-widget';
   card.id = `widget-${type}`;
-  let title = 'MODULE', bodyHTML = '', w = 240, h = 160;
+  let title = 'MONITOR', bodyHTML = '';
 
   if (type === 'sys-stats') {
-    title = 'SYSTEM MONITORS';
+    title = 'SYSTEM LOG CORE';
     bodyHTML = `
-      <div class="sys-metric-row">
-        <div class="sys-meta"><span>CPU EXECUTION</span><span class="val">18%</span></div>
-        <div class="sys-progress-bar"><div class="sys-progress-fill" style="width: 18%"></div></div>
+      <div class="sys-metric-row monospace">
+        <div class="sys-meta"><span>PROCESS ENGINE CPU</span><span class="val">24%</span></div>
+        <div class="sys-progress-bar"><div class="sys-progress-fill" style="width: 24%"></div></div>
       </div>
     `;
   }
@@ -305,12 +315,15 @@ function spawnWorkspaceWidget(type) {
     <div class="widget-head"><span>${title}</span><button class="widget-close" data-remove="${type}">×</button></div>
     <div class="widget-body">${bodyHTML}</div>
   `;
-  card.style.width = w + 'px'; card.style.height = h + 'px';
   board.appendChild(card);
-  placeWidgetElement(card, type, 40, 40);
+  placeWidgetElement(card, type, 20, 20);
   bindDragLogic(card, type);
+  
+  appendSystemEventLog('info', `Spawned monitoring widget workspace node: [${type.toUpperCase()}]`);
+
   card.querySelector('[data-remove]').addEventListener('click', () => {
     card.remove(); delete widgetPositions[type]; updateCanvasEmptyState();
+    appendSystemEventLog('warn', `Terminated monitoring dashboard widget node: [${type.toUpperCase()}]`);
   });
   updateCanvasEmptyState();
 }
@@ -323,6 +336,7 @@ function placeWidgetElement(el, type, x, y) {
 function bindDragLogic(el, type) {
   const head = el.querySelector('.widget-head');
   let active = false, currentX, currentY, initialX, initialY, xOffset = widgetPositions[type].x, yOffset = widgetPositions[type].y;
+  
   head.addEventListener('mousedown', e => {
     initialX = e.clientX - xOffset; initialY = e.clientY - yOffset; active = true;
   });
@@ -341,30 +355,8 @@ function updateCanvasEmptyState() {
   if (msg) msg.style.display = Object.keys(widgetPositions).length === 0 ? 'block' : 'none';
 }
 
-/* --- GameHub Layout Elements Target Renderer --- */
+/* --- GameHub Repository Rendering with Meta Badge Logic & Searches --- */
 function initGameHubLayout() {
-  const canvasWrap = document.querySelector('.canvas-container');
-  if (!canvasWrap) return;
-
-  let hubContainer = document.querySelector('.gamehub-container');
-  if (!hubContainer) {
-    hubContainer = document.createElement('div');
-    hubContainer.className = 'gamehub-container';
-    hubContainer.innerHTML = `
-      <div class="gamehub-tabs">
-        <button class="gamehub-tab-btn active" data-hub-tab="heroes">HERO REPOSITORY</button>
-        <button class="gamehub-tab-btn" data-hub-tab="items">EQUIPMENT CORE</button>
-      </div>
-      <div class="gamehub-content-view active" id="hub-view-heroes">
-        <div class="hub-grid" id="heroes-grid-target"></div>
-      </div>
-      <div class="gamehub-content-view" id="hub-view-items">
-        <div class="hub-grid" id="items-grid-target"></div>
-      </div>
-    `;
-    canvasWrap.appendChild(hubContainer);
-  }
-
   document.querySelectorAll('.gamehub-tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.gamehub-tab-btn').forEach(b => b.classList.remove('active'));
@@ -375,35 +367,48 @@ function initGameHubLayout() {
     });
   });
 
+  const hSearch = document.getElementById('hero-search-input');
+  const iSearch = document.getElementById('item-search-input');
+
+  hSearch?.addEventListener('input', () => { filterGameHubCollection('heroes', hSearch.value); });
+  iSearch?.addEventListener('input', () => { filterGameHubCollection('items', iSearch.value); });
+
   if (typeof GameHubData !== 'undefined') {
-    renderGameHubGridElements();
+    renderGameHubGridElements(GameHubData.heroes, GameHubData.items);
   }
 }
 
-function renderGameHubGridElements() {
+function renderGameHubGridElements(heroesArr, itemsArr) {
   const hGrid = document.getElementById('heroes-grid-target');
   const iGrid = document.getElementById('items-grid-target');
 
-  if (hGrid && GameHubData.heroes) {
-    hGrid.innerHTML = GameHubData.heroes.map(hero => `
-      <div class="hub-card" onclick="openGameHubDetailItem('heroes', '${hero.id}')">
-        <div class="hub-card-media">
-          <img class="hub-card-img" src="${hero.img}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' style=\'fill:%23111\'><rect width=\'100\' height=\'100\'/><text x=\'50%\' y=\'50%\' dominant-baseline=\'middle\' text-anchor=\'middle\' fill=\'%23444\' font-family=\'monospace\' font-size=\'10\'>${hero.name}</text></svg>'">
-          <span class="hub-card-badge">${hero.rarity}</span>
+  if (hGrid && heroesArr) {
+    hGrid.innerHTML = heroesArr.map(hero => {
+      let processedBadgeText = hero.rarity;
+      if (hero.rarity.includes('(META)')) {
+        processedBadgeText = hero.rarity.replace('(META)', '<span class="meta-fade">(META)</span>');
+      }
+
+      return `
+        <div class="hub-card" data-tier="${hero.rarity}" onclick="openGameHubDetailItem('heroes', '${hero.id}')">
+          <div class="hub-card-media">
+            <img class="hub-card-img" src="${hero.img}" alt="${hero.name}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' style=\'fill:%23111\'><rect width=\'100\' height=\'100\'/><text x=\'50%\' y=\'50%\' dominant-baseline=\'middle\' text-anchor=\'middle\' fill=\'%23555\' font-family=\'monospace\' font-size=\'11\'>${hero.name}</text></svg>'">
+            <span class="hub-card-badge">${processedBadgeText}</span>
+          </div>
+          <div class="hub-card-overlay">
+            <div class="hub-card-title">${hero.name}</div>
+            <div class="hub-card-sub">${hero.role}</div>
+          </div>
         </div>
-        <div class="hub-card-overlay">
-          <div class="hub-card-title">${hero.name}</div>
-          <div class="hub-card-sub">${hero.role}</div>
-        </div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
   }
 
-  if (iGrid && GameHubData.items) {
-    iGrid.innerHTML = GameHubData.items.map(item => `
-      <div class="hub-card" onclick="openGameHubDetailItem('items', '${item.id}')">
+  if (iGrid && itemsArr) {
+    iGrid.innerHTML = itemsArr.map(item => `
+      <div class="hub-card" data-tier="${item.tier}" onclick="openGameHubDetailItem('items', '${item.id}')">
         <div class="hub-card-media">
-          <img class="hub-card-img" src="${item.img}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' style=\'fill:%23111\'><rect width=\'100\' height=\'100\'/><text x=\'50%\' y=\'50%\' dominant-baseline=\'middle\' text-anchor=\'middle\' fill=\'%23444\' font-family=\'monospace\' font-size=\'9\'>${item.name}</text></svg>'">
+          <img class="hub-card-img" src="${item.img}" alt="${item.name}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' style=\'fill:%23111\'><rect width=\'100\' height=\'100\'/><text x=\'50%\' y=\'50%\' dominant-baseline=\'middle\' text-anchor=\'middle\' fill=\'%23555\' font-family=\'monospace\' font-size=\'10\'>${item.name}</text></svg>'">
           <span class="hub-card-badge">${item.tier}</span>
         </div>
         <div class="hub-card-overlay">
@@ -415,22 +420,193 @@ function renderGameHubGridElements() {
   }
 }
 
+function filterGameHubCollection(collection, query) {
+  const qStr = query.toLowerCase().trim();
+  const source = GameHubData[collection];
+  if (!source) return;
+
+  const matches = source.filter(item => 
+    item.name.toLowerCase().includes(qStr) || 
+    (item.role && item.role.toLowerCase().includes(qStr)) || 
+    (item.type && item.type.toLowerCase().includes(qStr)) || 
+    item.id.toLowerCase().includes(qStr)
+  );
+
+  if (collection === 'heroes') renderGameHubGridElements(matches, null);
+  if (collection === 'items') renderGameHubGridElements(null, matches);
+}
+
 function openGameHubDetailItem(collection, id) {
   const dataset = GameHubData[collection].find(x => x.id === id);
   if (!dataset) return;
-  appendBubbleMessage('assistant', `**[${dataset.name}]** Profile Entry Loaded:\n${dataset.desc}\nSystem Resource Asset Target Route: \`${dataset.img}\``);
+  appendBubbleMessage('assistant', `**[${dataset.name}]** Profile Asset Decoupled Readout:\nType Role Parameters: \`${dataset.role || dataset.type}\` — Active Registry Metadata Log Complete.`);
+  appendSystemEventLog('info', `Loaded MLBB asset data parameters log read for: [${dataset.name.toUpperCase()}]`);
 }
 
-/* --- Storage Backend Server Handlers --- */
+/* --- Tab 3: System Prompting Matrices Engine --- */
+function initPromptLibrary() {
+  const addBtn = document.getElementById('open-add-prompt-modal');
+  const modal = document.getElementById('modal-prompt-overlay');
+  const closeBtn = document.getElementById('close-modal-btn');
+  const saveBtn = document.getElementById('save-prompt-btn');
+  const searchInp = document.getElementById('prompt-search-input');
+
+  addBtn?.addEventListener('click', () => { modal?.classList.add('active'); });
+  closeBtn?.addEventListener('click', () => { modal?.classList.remove('active'); });
+  
+  saveBtn?.addEventListener('click', () => {
+    const title = document.getElementById('modal-prompt-title')?.value.trim();
+    const cat = document.getElementById('modal-prompt-cat')?.value.trim();
+    const text = document.getElementById('modal-prompt-text')?.value.trim();
+
+    if (!title || !text) return;
+    
+    App.prompts.push({
+      id: 'p_' + Math.random().toString(36).substring(2, 9),
+      title,
+      category: cat || 'Custom',
+      text
+    });
+
+    document.getElementById('modal-prompt-title').value = '';
+    document.getElementById('modal-prompt-cat').value = '';
+    document.getElementById('modal-prompt-text').value = '';
+    modal?.classList.remove('active');
+
+    renderPromptLibraryGrid();
+    appendSystemEventLog('info', `Injected new instruction script prompt template in inventory: [${title.toUpperCase()}]`);
+  });
+
+  searchInp?.addEventListener('input', () => {
+    const q = searchInp.value.toLowerCase().trim();
+    const matches = App.prompts.filter(p => 
+      p.title.toLowerCase().includes(q) || 
+      p.text.toLowerCase().includes(q) || 
+      p.category.toLowerCase().includes(q)
+    );
+    renderPromptLibraryGrid(matches);
+  });
+
+  renderPromptLibraryGrid();
+}
+
+function renderPromptLibraryGrid(subset) {
+  const target = document.getElementById('prompt-library-grid-target');
+  if (!target) return;
+  
+  const dataset = subset || App.prompts;
+  target.innerHTML = dataset.map(p => `
+    <div class="prompt-card">
+      <div class="prompt-card-cat monospace">${p.category.toUpperCase()}</div>
+      <div class="prompt-card-title">${p.title}</div>
+      <div class="prompt-card-text">${p.text}</div>
+      <div class="prompt-card-actions">
+        <button class="prompt-action-pill" onclick="executePromptTemplatePayload('${p.id}')">RUN SCRIPT</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function executePromptTemplatePayload(id) {
+  const p = App.prompts.find(x => x.id === id);
+  if (!p) return;
+  
+  const pillTab = document.querySelector('[data-target="panel-terminal"]');
+  if (pillTab) pillTab.click();
+  
+  appendBubbleMessage('user', p.text);
+  appendSystemEventLog('info', `Compiled system prompt template script locally: [${p.title.toUpperCase()}]`);
+}
+
+/* --- Tab 4: System Telemetry Realtime Events Stream Processor --- */
+function initLogsFeed() {
+  document.getElementById('clear-logs-btn')?.addEventListener('click', () => {
+    const stream = document.getElementById('logs-stream-target');
+    if (stream) {
+      stream.innerHTML = `<div class="log-row text-dim">[SYSTEM CLEARED BUFFER] -- Stream completely purged of older operations traces.</div>`;
+    }
+  });
+}
+
+function appendSystemEventLog(level, str) {
+  const stream = document.getElementById('logs-stream-target');
+  if (!stream) return;
+
+  const row = document.createElement('div');
+  row.className = `log-row monospace ${level}`;
+  const stamp = new Date().toLocaleTimeString();
+  row.textContent = `[${stamp}] -- ${str}`;
+  
+  stream.appendChild(row);
+  stream.scrollTop = stream.scrollHeight;
+}
+
+/* --- Tab 5: Realtime API Analytics & Traffic Telemetry --- */
+function initAnalyticsMetrics() {
+  // Initialization logic hook
+}
+
+function refreshAnalyticsVisuals() {
+  document.getElementById('metric-queries').textContent = App.stats.queries;
+  document.getElementById('metric-replies').textContent = App.stats.replies;
+  document.getElementById('metric-threads').textContent = App.stats.conversations;
+  document.getElementById('metric-tokens').textContent = App.stats.queries * 220 + App.stats.replies * 850;
+  
+  const chartTarget = document.getElementById('bars-visual-recap-target');
+  if (!chartTarget) return;
+
+  const maxTraffic = Math.max(...App.stats.hourlyTraffic, 1);
+
+  chartTarget.innerHTML = `
+    <div class="bars-graph-vault">
+      ${App.stats.hourlyTraffic.map((val, idx) => {
+        const perc = (val / maxTraffic) * 100;
+        const hh = idx.toString().padStart(2, '0');
+        return `
+          <div class="bar-col-wrap">
+            <div class="bar-fill-seg" style="height: ${perc}%" data-tooltip="${val} reqs"></div>
+            <span class="bar-stamp-lbl">${hh}h</span>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+/* --- Storage Application State Data Sync Handlers --- */
 function loadApplicationConfig() {
   fetch('/api/settings')
     .then(r => r.json())
     .then(config => {
       if (!config) return;
       App.settings = { ...App.settings, ...config };
+      
+      document.getElementById('input-api-key').value = App.settings.apiKey || '';
+      document.getElementById('input-gemini-key').value = App.settings.geminiKey || '';
+      document.getElementById('input-groq-key').value = App.settings.groqKey || '';
+      document.getElementById('input-together-key').value = App.settings.togetherKey || '';
+      document.getElementById('input-mistral-key').value = App.settings.mistralKey || '';
+
+      document.getElementById('input-model').value = App.settings.model || '';
+      document.getElementById('input-groq-model').value = App.settings.groqModel || '';
+      document.getElementById('input-gemini-model').value = App.settings.geminiModel || '';
+      document.getElementById('input-together-model').value = App.settings.togetherModel || '';
+      document.getElementById('input-mistral-model').value = App.settings.mistralModel || '';
+
+      document.getElementById('chk-speech').checked = App.settings.voiceEnabled;
+      document.getElementById('chk-motion').checked = App.settings.reducedMotion;
+      document.getElementById('chk-float-assist').checked = App.settings.floatingAssistantEnabled;
+      document.getElementById('select-response-mode').value = App.settings.responseMode;
+      document.getElementById('select-theme').value = App.settings.theme;
+
+      document.body.setAttribute('data-theme-variant', App.settings.theme);
+
       updateStatusDashboardLines();
       updateModelQuickSelectUI();
-    }).catch(() => {});
+      appendSystemEventLog('info', 'Application config profile successfully fetched and parsed into memory.');
+    }).catch(() => {
+      appendSystemEventLog('warn', 'Sync config endpoint server not running - app continues on local state defaults.');
+    });
 }
 
 function persistSettingsToServer() {
@@ -443,5 +619,5 @@ function persistSettingsToServer() {
 
 function updateStatusDashboardLines() {
   const line = document.getElementById('welcome-stats-line');
-  if (line) line.innerText = `INT::${App.stats.totalInteractions} | MSG::${App.settings.messages}`;
+  if (line) line.innerText = `INT::${App.stats.totalInteractions} | MSG::${App.stats.messages}`;
 }
