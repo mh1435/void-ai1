@@ -3,15 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VOID // Game Hub Portal</title>
+  <title>VOID // AI Studio Portal</title>
   <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/marked@4.3.0/marked.min.js"></script>
 </head>
 <body data-theme-variant="frost">
 
-  <!-- Core Main Grid Container Frame -->
   <div id="workspace-container">
     
-    <!-- Left Hand Control Pipeline Navigation -->
     <aside id="sidebar-panel">
       <div class="sidebar-identity">
         <div class="void-glitch-logo">VOID</div>
@@ -31,25 +30,41 @@
         <button class="tab-pill" id="open-settings-btn">
           <span class="icon">⚙</span> CORE OPTIONS
         </button>
+        <button class="tab-pill" data-target="panel-prompt-library">
+          <span class="icon">📋</span> PROMPT LIBRARY
+        </button>
+        <button class="tab-pill" data-target="panel-system-logs">
+          <span class="icon">🔍</span> SYSTEM LOGS
+        </button>
+        <button class="tab-pill" data-target="panel-api-usage">
+          <span class="icon">📊</span> API METRICS
+        </button>
       </nav>
+
+      <div class="sidebar-user-profile">
+        <div class="profile-avatar">AI</div>
+        <div class="profile-info">
+          <div class="profile-name">System Administrator</div>
+          <div class="profile-status text-dimmonospace">UID: 0x7F99A</div>
+        </div>
+      </div>
 
       <div class="sidebar-bottom-stats monospace" id="welcome-stats-line">
         INT::0 | MSG::0
       </div>
     </aside>
 
-    <!-- Center Display Dashboard Canvas -->
     <main id="view-main" class="view-tab active">
       <header id="top-bar">
-        <h1 id="workspace-title">GAME HUB</h1>
+        <h1 id="workspace-title">RUNTIME TERMINAL</h1>
         <div class="top-bar-actions">
+          <button class="action-btn-pill" id="clear-chat-btn">CLEAR SESSION</button>
           <button class="action-btn-pill" data-add-widget="sys-stats">+ MONITOR WIDGET</button>
         </div>
       </header>
 
       <div id="workspace-canvas-floor">
         
-        <!-- Tab 1: AI Assistant Interface & Script Workspace -->
         <div id="panel-terminal" class="view-tab active">
           <div class="terminal-layout-split">
             
@@ -57,20 +72,18 @@
               <div id="messages-box" class="messages-container-scroll">
                 <div class="chat-bubble assistant">
                   <div class="bubble-meta">VOID::CORE // INITIALIZED</div>
-                  <div class="bubble-body">System execution loops online. Ready for game compilation or tactical offline matrix optimization commands.</div>
+                  <div class="bubble-body">System execution loops online. Ready for model compilation or tactical offline matrix optimization commands.</div>
                 </div>
               </div>
               
-              <!-- Refactored Input Frame — Removed Reset & Voice elements -->
               <div class="chat-input-container">
-                <textarea id="chat-input" placeholder="Query assistant node... (Press Enter to execute)"></textarea>
+                <textarea id="chat-input" placeholder="Query assistant node... (Press Enter to execute, Shift+Enter for newline)"></textarea>
                 <div class="input-actions-bar">
                   <button id="send-msg-btn" class="icon-trigger-btn primary">EXE ⏵</button>
                 </div>
               </div>
             </div>
 
-            <!-- Draggable Widget Canvas Deck Area -->
             <div class="widget-deck-canvas" id="widget-board">
               <div id="canvas-empty-msg" class="monospace text-dim">No runtime monitor layouts attached to active dashboard pipeline layer.</div>
             </div>
@@ -78,7 +91,6 @@
           </div>
         </div>
 
-        <!-- Tab 2: Decoupled GameHub Content Panel Layout -->
         <div id="panel-gamehub" class="view-tab">
           <div class="gamehub-container">
             <div class="gamehub-tabs">
@@ -86,10 +98,73 @@
               <button class="gamehub-tab-btn" data-hub-tab="items">EQUIPMENT CORE</button>
             </div>
             <div class="gamehub-content-view active" id="hub-view-heroes">
+              <div class="gamehub-search-wrapper">
+                <input type="text" id="hero-search-input" placeholder="Search operational hero database registers...">
+              </div>
               <div class="hub-grid" id="heroes-grid-target"></div>
             </div>
             <div class="gamehub-content-view" id="hub-view-items">
+              <div class="gamehub-search-wrapper">
+                <input type="text" id="item-search-input" placeholder="Search equipment tier lists...">
+              </div>
               <div class="hub-grid" id="items-grid-target"></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="panel-prompt-library" class="view-tab">
+          <div class="panel-padded-wrap">
+            <header class="panel-inner-head">
+              <h2>PROMPT COMPILATION MATRIX</h2>
+              <button class="action-btn-pill" id="open-add-prompt-modal">+ NEW PROMPT</button>
+            </header>
+            <div class="prompt-filter-bar">
+              <input type="text" id="prompt-search-input" placeholder="Search compiled prompt templates...">
+            </div>
+            <div class="prompt-library-grid" id="prompt-library-grid-target"></div>
+          </div>
+        </div>
+
+        <div id="panel-system-logs" class="view-tab">
+          <div class="panel-padded-wrap">
+            <header class="panel-inner-head">
+              <h2>SYSTEM EVENT STREAM MONITOR</h2>
+              <button class="action-btn-pill danger" id="clear-logs-btn">PURGE BUFFER</button>
+            </header>
+            <div class="logs-stream-box monospace" id="logs-stream-target">
+              <div class="log-row text-dim">[00:00:00] -- System core booted into memory array. Ready to listen.</div>
+            </div>
+          </div>
+        </div>
+
+        <div id="panel-api-usage" class="view-tab">
+          <div class="panel-padded-wrap">
+            <header class="panel-inner-head">
+              <h2>ANALYTIC TELEMETRY METRICS</h2>
+            </header>
+            <div class="metrics-grid">
+              <div class="metric-card">
+                <div class="metric-title monospace">TOTAL QUERIES DISPATCHED</div>
+                <div class="metric-value" id="metric-queries">0</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-title monospace">TOTAL REPLIES PARSED</div>
+                <div class="metric-value" id="metric-replies">0</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-title monospace">ACTIVE CONVERSATION THREADS</div>
+                <div class="metric-value" id="metric-threads">1</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-title monospace">TOTAL SYSTEM TOKENS ESTIMATED</div>
+                <div class="metric-value" id="metric-tokens">0</div>
+              </div>
+            </div>
+            <div class="chart-container-card">
+              <div class="metric-title monospace" style="margin-bottom:15px;">INTERACTION TRAFFIC STREAM</div>
+              <div class="bars-visual-recap" id="bars-visual-recap-target">
+                <div class="bars-empty-note text-dim monospace">Awaiting inference transactions to render capacity telemetry...</div>
+              </div>
             </div>
           </div>
         </div>
@@ -97,33 +172,83 @@
       </div>
     </main>
 
-    <!-- Side View Panel: Options Overlays -->
     <div id="view-settings" class="view-tab">
       <header class="panel-sub-header">
         <h2>CORE APP CONFIGURATION</h2>
         <button id="close-settings-btn" class="close-panel-pill">✕ BACK</button>
       </header>
       <div class="settings-view-body">
+        
         <div class="settings-panel-card">
           <h3>INTELLIGENCE PROVIDER KEY ACCESS</h3>
-          <div class="form-row"><label>OpenRouter Token</label><input type="password" id="input-api-key"></div>
-          <div class="form-row"><label>Groq Token</label><input type="password" id="input-groq-key"></div>
-          <div class="form-row"><label>Gemini Token</label><input type="password" id="input-gemini-key"></div>
+          <div class="form-row"><label>OpenRouter Token</label><input type="password" id="input-api-key" placeholder="sk-or-..."></div>
+          <div class="form-row"><label>Groq Token</label><input type="password" id="input-groq-key" placeholder="gsk_..."></div>
+          <div class="form-row"><label>Gemini Token</label><input type="password" id="input-gemini-key" placeholder="AIzaSy..."></div>
+          <div class="form-row"><label>Together AI Token</label><input type="password" id="input-together-key" placeholder="bearer..."></div>
+          <div class="form-row"><label>Mistral AI Token</label><input type="password" id="input-mistral-key" placeholder="ms-..."></div>
           <button id="save-keys-btn" class="save-action-btn">PERSIST ACCESS TOKENS</button>
         </div>
+
         <div class="settings-panel-card">
           <h3>INFERENCE MODEL OVERRIDES</h3>
-          <div class="form-row"><label>OpenRouter Primary</label><input type="text" id="input-model"></div>
-          <div class="form-row"><label>Groq Engine Target</label><input type="text" id="input-groq-model"></div>
-          <div class="form-row"><label>Gemini Engine Target</label><input type="text" id="input-gemini-model"></div>
+          <div class="form-row"><label>OpenRouter Primary</label><input type="text" id="input-model" placeholder="meta-llama/llama-3.2-3b-instruct:free"></div>
+          <div class="form-row"><label>Groq Engine Target</label><input type="text" id="input-groq-model" placeholder="llama-3.3-70b-versatile"></div>
+          <div class="form-row"><label>Gemini Engine Target</label><input type="text" id="input-gemini-model" placeholder="gemini-2.5-flash"></div>
+          <div class="form-row"><label>Together AI Target</label><input type="text" id="input-together-model" placeholder="meta-llama/Llama-3.2-70B-Instruct-Turbo"></div>
+          <div class="form-row"><label>Mistral Engine Target</label><input type="text" id="input-mistral-model" placeholder="mistral-large-latest"></div>
           <button id="save-models-btn" class="save-action-btn">COMPILE CORE NODES</button>
         </div>
+
+        <div class="settings-panel-card">
+          <h3>SYSTEM APPLICATION PREFERENCES</h3>
+          <div class="form-row inline-check">
+            <input type="checkbox" id="chk-speech"><label for="chk-speech">Enable Text-to-Speech Output</label>
+          </div>
+          <div class="form-row inline-check">
+            <input type="checkbox" id="chk-motion"><label for="chk-motion">Reduce Application Visual Motion</label>
+          </div>
+          <div class="form-row inline-check">
+            <input type="checkbox" id="chk-float-assist"><label for="chk-float-assist">Enable Floating Assistant Interface Panel</label>
+          </div>
+          <div class="form-row">
+            <label>Interface Response Paradigm</label>
+            <select id="select-response-mode">
+              <option value="standard">Standard Analytical Assistant</option>
+              <option value="concise">Concise Telemetry Readings</option>
+              <option value="code-heavy">Code-Heavy Synthesis Engine</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label>Application Layout Color Theme</label>
+            <select id="select-theme">
+              <option value="frost">Ice Cold Frost (Dark Default)</option>
+              <option value="crimson">Crimson Matrix Matrix</option>
+              <option value="amber">Amber Terminal Grid</option>
+              <option value="emerald">Emerald Void Frame</option>
+            </select>
+          </div>
+          <button id="save-preferences-btn" class="save-action-btn">APPLY SYSTEM PREFERENCES</button>
+        </div>
+
       </div>
     </div>
-
   </div>
 
-  <!-- Component System Injections -->
+  <div id="modal-prompt-overlay" class="modal-system-backdrop">
+    <div class="modal-card-body">
+      <header class="modal-head">
+        <h3>INJECT NEW PROMPT TEMPLATE</h3>
+        <button class="modal-close-trigger" id="close-modal-btn">✕</button>
+      </header>
+      <div class="modal-content-form">
+        <div class="form-row"><label>System Template Title</label><input type="text" id="modal-prompt-title" placeholder="Context Title"></div>
+        <div class="form-row"><label>Execution Role Definition Category</label><input type="text" id="modal-prompt-cat" placeholder="System Prompt Category"></div>
+        <div class="form-row"><label>Prompting Instructions Payload</label><textarea id="modal-prompt-text" rows="5" placeholder="System payload script string..."></textarea></div>
+        <div class="modal-action-row"><button class="action-btn-pill primary" id="save-prompt-btn">✦ COMPILE PROMPT</button></div>
+      </div>
+    </div>
+  </div>
+
   <script src="gamehub-data.js"></script>
   <script src="app.js"></script>
 </body>
