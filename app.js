@@ -11,10 +11,14 @@ const App = {
     apiKey: '',
     geminiKey: '',
     groqKey: '',
+    togetherKey: '',
+    mistralKey: '',
     model: 'meta-llama/llama-3.2-3b-instruct:free',
     groqModel: 'llama-3.3-70b-versatile',
     geminiModel: 'gemini-2.5-flash',
-    providerOrder: ['gemini', 'groq', 'openrouter'],
+    togetherModel: 'meta-llama/Llama-3.2-70B-Instruct-Turbo',
+    mistralModel: 'mistral-large-latest',
+    providerOrder: ['gemini', 'groq', 'together', 'mistral', 'openrouter'],
     activeProvider: '',
     activeModel: '',
     mapProvider: 'google',
@@ -58,6 +62,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupModelSheet();
   setupVoicePanel();
   setupCommandsPanel();
+  requestLocationOnBoot(); // Auto-request location on page load
+});
   setupTasksPanel();
   setupFloatingAssistantPanel();
   setupLocationPanel();
@@ -189,7 +195,23 @@ async function saveCommands() {
 
 function applyTheme(name) {
   App.settings.theme = name;
-  document.documentElement.setAttribute('data-theme', name === 'frost' ? '' : name);
+  const root = document.documentElement;
+  root.setAttribute('data-theme', name === 'frost' ? '' : name);
+
+  // Theme color values for button/UI tinting
+  const themeColors = {
+    'frost': { hue: 200, sat: 70, light: 50 }, // cyan
+    'ember': { hue: 0, sat: 70, light: 50 },    // red
+    'sage': { hue: 120, sat: 50, light: 45 },   // green
+    'violet': { hue: 270, sat: 60, light: 50 }, // purple
+    'gold': { hue: 40, sat: 80, light: 50 }     // orange/gold
+  };
+
+  const color = themeColors[name] || themeColors.frost;
+  root.style.setProperty('--theme-hue', color.hue);
+  root.style.setProperty('--theme-sat', color.sat + '%');
+  root.style.setProperty('--theme-light', color.light + '%');
+
   document.querySelectorAll('.theme-dot').forEach(d => {
     d.classList.toggle('active', d.dataset.theme === name);
   });
@@ -251,6 +273,10 @@ function setupSettingsPanels() {
     App.settings.groqModel = document.getElementById('groq-model-select').value;
     App.settings.apiKey = document.getElementById('api-key-input').value.trim();
     App.settings.model = document.getElementById('api-model-select').value;
+    App.settings.togetherKey = document.getElementById('together-key-input').value.trim();
+    App.settings.togetherModel = document.getElementById('together-model-select').value;
+    App.settings.mistralKey = document.getElementById('mistral-key-input').value.trim();
+    App.settings.mistralModel = document.getElementById('mistral-model-select').value;
 
     const status = document.getElementById('api-key-status');
     status.textContent = 'Saving…';
@@ -269,13 +295,15 @@ function setupSettingsPanels() {
       const mismatch =
         (serverSettings.geminiKey || '') !== App.settings.geminiKey ||
         (serverSettings.groqKey || '') !== App.settings.groqKey ||
-        (serverSettings.apiKey || '') !== App.settings.apiKey;
+        (serverSettings.apiKey || '') !== App.settings.apiKey ||
+        (serverSettings.togetherKey || '') !== App.settings.togetherKey ||
+        (serverSettings.mistralKey || '') !== App.settings.mistralKey;
 
       if (mismatch) {
         status.textContent = 'Saved, but server shows different values — try reloading the page.';
         console.warn('Settings mismatch after save:', { sent: App.settings, server: serverSettings });
       } else {
-        const anyKey = App.settings.geminiKey || App.settings.groqKey || App.settings.apiKey;
+        const anyKey = App.settings.geminiKey || App.settings.groqKey || App.settings.apiKey || App.settings.togetherKey || App.settings.mistralKey;
         status.textContent = anyKey ? 'Keys saved and verified.' : 'No keys set.';
       }
     } catch (e) {
@@ -396,6 +424,8 @@ function openPanel(panelId) {
     if (App.settings.geminiKey) document.getElementById('gemini-key-input').value = App.settings.geminiKey;
     if (App.settings.groqKey) document.getElementById('groq-key-input').value = App.settings.groqKey;
     if (App.settings.apiKey) document.getElementById('api-key-input').value = App.settings.apiKey;
+    if (App.settings.togetherKey) document.getElementById('together-key-input').value = App.settings.togetherKey;
+    if (App.settings.mistralKey) document.getElementById('mistral-key-input').value = App.settings.mistralKey;
   }
 }
 
@@ -421,12 +451,50 @@ const GAMES_DB = {
       { name: 'Angela', tag: 'Support' },
       { name: 'Tigreal', tag: 'Tank' },
       { name: 'Gusion', tag: 'Assassin' },
+      { name: 'Chou', tag: 'Fighter' },
+      { name: 'Ling', tag: 'Assassin' },
+      { name: 'Kagura', tag: 'Mage' },
+      { name: 'Esmeralda', tag: 'Mage/Tank' },
+      { name: 'Lesley', tag: 'Marksman' },
+      { name: 'Karrie', tag: 'Marksman' },
+      { name: 'Khufra', tag: 'Tank' },
+      { name: 'Mathilda', tag: 'Support' },
+      { name: 'Beatrix', tag: 'Marksman' },
+      { name: 'Yu Zhong', tag: 'Fighter' },
+      { name: 'Paquito', tag: 'Fighter' },
+      { name: 'Valentina', tag: 'Mage' },
+      { name: 'Aldous', tag: 'Fighter' },
+      { name: 'Hayabusa', tag: 'Assassin' },
+      { name: 'Saber', tag: 'Assassin' },
+      { name: 'Layla', tag: 'Marksman' },
+      { name: 'Miya', tag: 'Marksman' },
+      { name: 'Alucard', tag: 'Fighter' },
+      { name: 'Zilong', tag: 'Fighter' },
+      { name: 'Fredrinn', tag: 'Fighter/Tank' },
+      { name: 'Joy', tag: 'Assassin' },
+      { name: 'Arlott', tag: 'Fighter' },
+      { name: 'Suyou', tag: 'Assassin' },
+      { name: 'Lukas', tag: 'Fighter' },
     ],
     weapons: [
       { name: 'Blade of Despair', tag: 'Physical' },
       { name: 'Clock of Destiny', tag: 'Magic' },
       { name: "Demon Hunter Sword", tag: 'Physical' },
       { name: 'Holy Crystal', tag: 'Magic' },
+      { name: "Berserker's Fury", tag: 'Physical' },
+      { name: 'Wind of Nature', tag: 'Physical' },
+      { name: 'Immortality', tag: 'Defense' },
+      { name: "Athena's Shield", tag: 'Defense' },
+      { name: 'Antique Cuirass', tag: 'Defense' },
+      { name: 'Brute Force Breastplate', tag: 'Defense' },
+      { name: 'Genius Wand', tag: 'Magic' },
+      { name: 'Lightning Truncheon', tag: 'Magic' },
+      { name: 'Endless Battle', tag: 'Physical' },
+      { name: 'Malefic Roar', tag: 'Physical' },
+      { name: 'Windtalker', tag: 'Physical' },
+      { name: 'Rose Gold Meteor', tag: 'Magic' },
+      { name: 'Blade Armor', tag: 'Defense' },
+      { name: 'Dominance Ice', tag: 'Defense' },
     ],
     maps: [
       { name: 'Land of Dawn', tag: '5v5' },
@@ -462,12 +530,96 @@ const HubState = {
   activeTab: 'characters',
 };
 
+// Optional generated detail data (from generate_mlbb_data.py).
+// If output/heroes.json or output/items.json don't exist yet, the app
+// just falls back to showing name/tag only — nothing breaks.
+const HubDetails = { heroes: {}, items: {} };
+
+async function loadHubDetails() {
+  try {
+    const heroRes = await fetch('output/heroes.json');
+    if (heroRes.ok) HubDetails.heroes = await heroRes.json();
+  } catch (_) {}
+  try {
+    const itemRes = await fetch('output/items.json');
+    if (itemRes.ok) HubDetails.items = await itemRes.json();
+  } catch (_) {}
+}
+
 function setupGameHub() {
   renderGameRail();
   setupInfoTabs();
   HubState.activeGame = Object.keys(GAMES_DB)[0];
+  loadHubDetails().then(renderInfoGrid);
   renderInfoGrid();
   setupSkyBand();
+  setupInfoDetailSheet();
+}
+
+function closeInfoDetailSheet() {
+  document.getElementById('info-detail-overlay').classList.remove('open');
+  document.getElementById('info-detail-sheet').classList.remove('open');
+}
+
+function setupInfoDetailSheet() {
+  document.getElementById('info-detail-overlay').addEventListener('click', closeInfoDetailSheet);
+}
+
+function openInfoDetail(entry) {
+  const isWeapon = HubState.activeTab === 'weapons';
+  const data = isWeapon ? HubDetails.items[entry.name] : HubDetails.heroes[entry.name];
+  const content = document.getElementById('info-detail-content');
+
+  if (!data) {
+    content.innerHTML = `
+      <div class="sheet-title">${entry.name}</div>
+      <p class="muted small" style="padding:0 4px 16px;">${entry.tag} — no detailed write-up generated yet.</p>
+    `;
+  } else if (isWeapon) {
+    content.innerHTML = `
+      <div class="sheet-title">${data.name}</div>
+      <p class="info-detail-tag">${data.category || ''}</p>
+      <p class="info-detail-summary">${data.summary || ''}</p>
+      ${renderListSection('Key effects', data.key_effects)}
+      ${renderListSection('Best for', data.best_for)}
+      ${data.tip ? `<p class="info-detail-note">${data.tip}</p>` : ''}
+    `;
+  } else {
+    content.innerHTML = `
+      <div class="sheet-title">${data.name}</div>
+      <p class="info-detail-tag">${data.role || ''}${data.difficulty ? ' · ' + data.difficulty + ' difficulty' : ''}</p>
+      <p class="info-detail-summary">${data.summary || ''}</p>
+      ${renderListSection('Strengths', data.strengths)}
+      ${renderListSection('Weaknesses', data.weaknesses)}
+      ${renderCountersSection(data.counters)}
+      ${data.countered_by_tip ? `<p class="info-detail-note">${data.countered_by_tip}</p>` : ''}
+      ${renderListSection('Suggested build', data.best_build)}
+      ${data.build_notes ? `<p class="info-detail-note">${data.build_notes}</p>` : ''}
+    `;
+  }
+
+  document.getElementById('info-detail-overlay').classList.add('open');
+  document.getElementById('info-detail-sheet').classList.add('open');
+}
+
+function renderListSection(label, items) {
+  if (!items || !items.length) return '';
+  return `
+    <div class="info-detail-section-label">${label}</div>
+    <ul class="info-detail-list">
+      ${items.map(i => `<li>${i}</li>`).join('')}
+    </ul>
+  `;
+}
+
+function renderCountersSection(counters) {
+  if (!counters || !counters.length) return '';
+  return `
+    <div class="info-detail-section-label">Countered by</div>
+    <ul class="info-detail-list">
+      ${counters.map(c => `<li><strong>${c.hero}</strong> — ${c.why}</li>`).join('')}
+    </ul>
+  `;
 }
 
 function renderGameRail() {
@@ -520,6 +672,10 @@ function renderInfoGrid() {
       <div class="info-card-tag">${entry.tag}</div>
     </div>
   `).join('');
+
+  grid.querySelectorAll('.info-card').forEach((card, i) => {
+    card.addEventListener('click', () => openInfoDetail(entries[i]));
+  });
 }
 
 /* ---------- Sky band: live weather, automatic on load ---------- */
@@ -624,9 +780,11 @@ function refreshDashboard() {
 let widgetSeq = 0;
 let widgetPositions = {}; // id -> {x, y}
 
+const SNAP_GRID = 16; // pixels for grid snapping
+
 function setupCanvas() {
-  document.getElementById('canvas-add').addEventListener('click', () => addDefaultWidgets());
-  document.getElementById('canvas-empty-add').addEventListener('click', () => addDefaultWidgets());
+  document.getElementById('canvas-add').addEventListener('click', openWidgetMenu);
+  document.getElementById('canvas-empty-add').addEventListener('click', openWidgetMenu);
   document.getElementById('canvas-clear').addEventListener('click', () => {
     document.getElementById('canvas-board').innerHTML = '';
     widgetPositions = {};
@@ -634,10 +792,62 @@ function setupCanvas() {
     updateCanvasEmptyState();
   });
 
+  setupWidgetMenu();
   setupCanvasPanZoom();
 
-  addTimeWidget();
-  addWeatherWidget();
+  // Load existing widgets from persisted positions, or add defaults on first load
+  if (Object.keys(widgetPositions).length === 0) {
+    addTimeWidget();
+    addWeatherWidget();
+    persistWidgetLayout();
+  } else {
+    // Re-render widgets from saved positions
+    document.getElementById('canvas-board').innerHTML = '';
+    if (widgetPositions['widget-time']) addTimeWidget();
+    if (widgetPositions['widget-weather']) addWeatherWidget();
+  }
+  updateCanvasEmptyState();
+}
+
+function setupWidgetMenu() {
+  const overlay = document.getElementById('widget-menu-overlay');
+  const menu = document.getElementById('widget-menu');
+  const list = document.getElementById('widget-menu-list');
+
+  // Widget type definitions
+  const widgetTypes = [
+    { id: 'time', label: 'Clock', desc: 'Current time' },
+    { id: 'weather', label: 'Weather', desc: 'Local forecast' },
+  ];
+
+  list.innerHTML = widgetTypes.map(w => `
+    <button class="widget-menu-item" data-widget-type="${w.id}">
+      <strong>${w.label}</strong>
+      <span class="widget-menu-desc">${w.desc}</span>
+    </button>
+  `).join('');
+
+  list.addEventListener('click', (e) => {
+    const btn = e.target.closest('.widget-menu-item');
+    if (!btn) return;
+    const type = btn.dataset.widgetType;
+    closeWidgetMenu();
+    if (type === 'time') addTimeWidget();
+    else if (type === 'weather') addWeatherWidget();
+    updateCanvasEmptyState();
+  });
+
+  overlay.addEventListener('click', closeWidgetMenu);
+}
+
+function openWidgetMenu() {
+  document.getElementById('widget-menu-overlay').classList.add('open');
+  document.getElementById('widget-menu').classList.add('open');
+}
+
+function closeWidgetMenu() {
+  document.getElementById('widget-menu-overlay').classList.remove('open');
+  document.getElementById('widget-menu').classList.remove('open');
 }
 
 /* ---- pan & zoom ---- */
@@ -728,6 +938,40 @@ function placeWidget(card, id, defaultX, defaultY) {
   makeWidgetDraggable(card, id);
 }
 
+function snapToGrid(value, gridSize = SNAP_GRID) {
+  return Math.round(value / gridSize) * gridSize;
+}
+
+function snapToEdges(x, y, card) {
+  const threshold = 16;
+  const board = document.getElementById('canvas-board');
+  const allCards = board.querySelectorAll('.widget-card:not(.dragging)');
+  let snappedX = x;
+  let snappedY = y;
+
+  const rect = card.getBoundingClientRect();
+  const cardW = rect.width;
+  const cardH = rect.height;
+
+  allCards.forEach(other => {
+    const otherRect = other.getBoundingClientRect();
+    const otherX = parseFloat(other.style.left) || 0;
+    const otherY = parseFloat(other.style.top) || 0;
+    const otherW = otherRect.width;
+    const otherH = otherRect.height;
+
+    // Snap X: left edge to other left, or right edge to other right
+    if (Math.abs(x - otherX) < threshold) snappedX = otherX;
+    if (Math.abs((x + cardW) - (otherX + otherW)) < threshold) snappedX = otherX + otherW - cardW;
+
+    // Snap Y: top edge to other top, or bottom to other bottom
+    if (Math.abs(y - otherY) < threshold) snappedY = otherY;
+    if (Math.abs((y + cardH) - (otherY + otherH)) < threshold) snappedY = otherY + otherH - cardH;
+  });
+
+  return { x: snapToGrid(snappedX), y: snapToGrid(snappedY) };
+}
+
 function makeWidgetDraggable(card, id) {
   const handle = card.querySelector('.widget-head');
   if (!handle) return;
@@ -752,8 +996,14 @@ function makeWidgetDraggable(card, id) {
     const scale = App.canvasView.scale || 1;
     const dx = (e.clientX - startX) / scale;
     const dy = (e.clientY - startY) / scale;
-    const newLeft = startLeft + dx;
-    const newTop = startTop + dy;
+    let newLeft = startLeft + dx;
+    let newTop = startTop + dy;
+
+    // Apply snapping (grid + edges)
+    const snapped = snapToEdges(newLeft, newTop, card);
+    newLeft = snapped.x;
+    newTop = snapped.y;
+
     card.style.left = newLeft + 'px';
     card.style.top = newTop + 'px';
     widgetPositions[id] = { x: newLeft, y: newTop };
@@ -774,10 +1024,21 @@ function updateCanvasEmptyState() {
   document.getElementById('canvas-empty').classList.toggle('hidden', board.children.length > 0);
 }
 
-function addDefaultWidgets() {
-  if (!document.getElementById('widget-time')) addTimeWidget();
-  if (!document.getElementById('widget-weather')) addWeatherWidget();
-  updateCanvasEmptyState();
+function requestLocationOnBoot() {
+  if (!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      App.location = {
+        lat: pos.coords.latitude,
+        lon: pos.coords.longitude,
+        label: null
+      };
+      // Optionally update weather/weather widget if already exists
+      const weatherWidget = document.getElementById('widget-weather');
+      if (weatherWidget) updateWeatherWidget();
+    },
+    () => { /* permission denied or error, silently continue */ }
+  );
 }
 
 function addTimeWidget() {

@@ -723,6 +723,48 @@ button { border: none; background: none; cursor: pointer; }
 .sheet-title { font-size: 15px; font-weight: 700; margin-bottom: 10px; flex-shrink: 0; }
 
 .model-sheet-list { overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+
+/* ============ Game info detail sheet ============ */
+.info-detail-sheet { overflow-y: auto; }
+.info-detail-tag {
+  font-family: var(--hub-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--hub-violet);
+  text-transform: uppercase;
+  margin: -4px 0 10px;
+}
+.info-detail-summary {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--text);
+  margin: 0 0 14px;
+}
+.info-detail-section-label {
+  font-family: var(--hub-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 14px 0 6px;
+}
+.info-detail-list {
+  margin: 0; padding-left: 18px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.info-detail-list li {
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text);
+}
+.info-detail-note {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--muted);
+  font-style: italic;
+  margin: 12px 0 0;
+}
 .model-row {
   display: flex;
   align-items: center;
@@ -1229,4 +1271,131 @@ body.reduced-motion .sky-rain {
   animation: none !important;
 }
 
+/* ============ Theme-colored buttons ============ */
+:root {
+  --theme-hue: 200;
+  --theme-sat: 70%;
+  --theme-light: 50%;
+}
+
+button {
+  transition: all 0.2s ease;
+}
+
+.primary-btn, .canvas-ctrl-btn {
+  background: hsla(var(--theme-hue), var(--theme-sat), var(--theme-light), 0.15);
+  border: 1px solid hsla(var(--theme-hue), var(--theme-sat), var(--theme-light), 0.3);
+  color: hsl(var(--theme-hue), var(--theme-sat), calc(var(--theme-light) + 10%));
+}
+
+.primary-btn:hover, .canvas-ctrl-btn:hover {
+  background: hsla(var(--theme-hue), var(--theme-sat), var(--theme-light), 0.25);
+  border-color: hsla(var(--theme-hue), var(--theme-sat), var(--theme-light), 0.5);
+}
+
+/* ============ Widget menu ============ */
+.widget-menu-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.widget-menu-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.widget-menu {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: var(--card);
+  border-top: 1px solid var(--border);
+  border-radius: 16px 16px 0 0;
+  max-height: 70vh;
+  overflow-y: auto;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  transform: translateY(100%);
+  transition: transform 0.3s ease;
+}
+
+.widget-menu.open {
+  transform: translateY(0);
+}
+
+.sheet-handle {
+  width: 40px;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  margin: 12px auto;
+}
+
+.sheet-title {
+  padding: 0 16px 12px;
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--text);
+}
+
+.widget-menu-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 12px 20px;
+}
+
+.widget-menu-item {
+  padding: 14px 16px;
+  text-align: left;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card-soft);
+}
+
+.widget-menu-item:hover {
+  background: hsla(var(--theme-hue), var(--theme-sat), var(--theme-light), 0.08);
+  border-color: hsla(var(--theme-hue), var(--theme-sat), var(--theme-light), 0.3);
+}
+
+.widget-menu-item strong {
+  display: block;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.widget-menu-desc {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* ============ Canvas grid overlay ============ */
+.canvas-grid-overlay {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    linear-gradient(0deg, transparent 23px, var(--border) 23px),
+    linear-gradient(90deg, transparent 23px, var(--border) 23px);
+  background-size: 24px 24px;
+  pointer-events: none;
+  opacity: 0.2;
+  z-index: 0;
+}
+
+.canvas-board {
+  position: relative;
+}
+
+.widget-card.dragging {
+  opacity: 0.9;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
 

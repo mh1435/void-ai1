@@ -30,32 +30,6 @@ if ('serviceWorker' in navigator) {
 <section class="view active" id="view-dashboard">
   <div class="view-scroll hub-scroll">
 
-    <div class="sky-band" id="sky-band" data-state="loading">
-      <div class="sky-layer sky-gradient"></div>
-      <div class="sky-layer sky-clouds" id="sky-clouds"></div>
-      <div class="sky-layer sky-rain" id="sky-rain"></div>
-      <div class="sky-layer sky-sun" id="sky-sun"></div>
-      <div class="sky-layer sky-stars" id="sky-stars"></div>
-
-      <div class="sky-content">
-        <div class="sky-top-row">
-          <span class="sky-place" id="sky-place">Locating you…</span>
-          <button class="sky-refresh" id="sky-refresh" aria-label="Refresh weather">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 3v5h5"></path><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"></path></svg>
-          </button>
-        </div>
-        <div class="sky-temp-row">
-          <span class="sky-temp" id="sky-temp">--°</span>
-          <span class="sky-desc" id="sky-desc">—</span>
-        </div>
-        <div class="sky-meta-row">
-          <span id="sky-feels">Feels like --°</span>
-          <span class="sky-dot">•</span>
-          <span id="sky-range">H: --°  L: --°</span>
-        </div>
-      </div>
-    </div>
-
     <div class="hub-section-label">Games</div>
     <div class="game-rail" id="game-rail"><!-- game tiles injected --></div>
 
@@ -82,6 +56,7 @@ if ('serviceWorker' in navigator) {
     <div class="canvas-board" id="canvas-board">
       <!-- widgets injected here -->
     </div>
+    <div class="canvas-grid-overlay" id="canvas-grid-overlay"></div>
   </div>
 
   <div class="canvas-empty hidden" id="canvas-empty">
@@ -106,7 +81,16 @@ if ('serviceWorker' in navigator) {
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3"></path><path d="M12 19v3"></path><path d="M2 12h3"></path><path d="M19 12h3"></path></svg>
     </button>
   </div>
+
+  <!-- Add Widget picker menu -->
+  <div class="widget-menu-overlay" id="widget-menu-overlay"></div>
+  <div class="widget-menu" id="widget-menu">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Add a widget</div>
+    <div class="widget-menu-list" id="widget-menu-list"><!-- options injected --></div>
+  </div>
 </section>
+
 
 <!-- ============ ASSISTANT (voice) ============ -->
 <section class="view" id="view-assistant">
@@ -176,6 +160,13 @@ if ('serviceWorker' in navigator) {
   <div class="model-sheet-list" id="model-sheet-list">
     <!-- model rows injected here -->
   </div>
+</div>
+
+<!-- ============ GAME INFO DETAIL SHEET ============ -->
+<div class="sheet-overlay" id="info-detail-overlay"></div>
+<div class="model-sheet info-detail-sheet" id="info-detail-sheet">
+  <div class="sheet-handle"></div>
+  <div id="info-detail-content"><!-- detail content injected here --></div>
 </div>
 
 <!-- ============ SETTINGS ============ -->
@@ -341,6 +332,34 @@ if ('serviceWorker' in navigator) {
         <option value="meta-llama/llama-3.2-3b-instruct:free">Llama 3.2 3B (free)</option>
         <option value="qwen/qwen3-next-80b-a3b-instruct:free">Qwen3 Next 80B (free)</option>
         <option value="google/gemma-4-26b-a4b-it:free">Gemma 4 26B (free)</option>
+      </select>
+    </div>
+
+    <div class="sheet-divider"></div>
+    <div class="settings-section-label">TOGETHER AI</div>
+    <div class="setting-row stacked">
+      <div class="setting-label"><span>API key</span><span class="setting-sub">Get a free key at <a href="https://www.together.ai/signin" target="_blank" rel="noopener">together.ai</a> — $5/month free credits</span></div>
+      <input type="password" class="text-input" id="together-key-input" placeholder="29eec…" autocomplete="off">
+    </div>
+    <div class="setting-row stacked">
+      <div class="setting-label"><span>Model</span></div>
+      <select class="select-input" id="together-model-select">
+        <option value="meta-llama/Llama-3.2-70B-Instruct-Turbo">Llama 3.2 70B Instruct</option>
+        <option value="meta-llama/Llama-3.1-8B-Instruct-Turbo">Llama 3.1 8B Instruct</option>
+      </select>
+    </div>
+
+    <div class="sheet-divider"></div>
+    <div class="settings-section-label">MISTRAL AI</div>
+    <div class="setting-row stacked">
+      <div class="setting-label"><span>API key</span><span class="setting-sub">Get a free key at <a href="https://console.mistral.ai/api-keys" target="_blank" rel="noopener">console.mistral.ai</a> — no card needed</span></div>
+      <input type="password" class="text-input" id="mistral-key-input" placeholder="s0mkey…" autocomplete="off">
+    </div>
+    <div class="setting-row stacked">
+      <div class="setting-label"><span>Model</span></div>
+      <select class="select-input" id="mistral-model-select">
+        <option value="mistral-large-latest">Mistral Large</option>
+        <option value="mistral-small-latest">Mistral Small</option>
       </select>
     </div>
 
