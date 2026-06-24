@@ -116,7 +116,7 @@ const MLBB_HERO_DATA_RAW = [
   // --- TANKS / ROAM ---
   { id: 'tigreal', role: 'Tank', rarity: 'A-TIER' },
   { id: 'akai', role: 'Tank', rarity: 'B-TIER' },
-  { id: 'franco', role: 'Tank', rarity: 'A-TIER' },
+  { id: 'franco', border: 'Tank', rarity: 'A-TIER' },
   { id: 'minotaur', role: 'Tank/Support', rarity: 'S-TIER (META)' },
   { id: 'johnson', role: 'Tank', rarity: 'B-TIER' },
   { id: 'hilda', role: 'Fighter/Tank', rarity: 'B-TIER' },
@@ -202,13 +202,24 @@ function buildHeroTitleString(id) {
     .join(id.includes('-') ? '-' : "'");
 }
 
+function resolveHeroFilename(id) {
+  // Manual overrides to match the exact physical assets on disk from the screenshots
+  if (id === 'lapu-lapu') return 'Lapu-lapu.png';
+  if (id === 'popol') return 'Popol and Kupa.png';
+  if (id === 'yu-zhong') return 'Yu Zhong.png';
+  if (id === 'x-borg') return 'X-Borg.png';
+
+  // Standard proper capitalization rule for all other single-word IDs
+  return id.charAt(0).toUpperCase() + id.slice(1) + '.png';
+}
+
 const GameHubData = {
   heroes: MLBB_HERO_DATA_RAW.map(h => ({
     id: h.id,
     name: buildHeroTitleString(h.id),
     role: h.role,
     rarity: h.rarity,
-    img: `images/heroes/${h.id}.png`,
+    img: `images/heroes/${resolveHeroFilename(h.id)}`, 
     desc: `Battlefield tactical asset database log parsing parameters for registry unit [${h.id.toUpperCase()}].`
   })),
   items: MLBB_ITEM_DATA_RAW.map(i => ({
