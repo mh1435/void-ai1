@@ -200,7 +200,8 @@ function appendBubbleMessage(role, text) {
 function parseMarkdownText(raw) {
   return raw
     .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-    .replace(/```([\s\S]+?)```/g, '<pre><code>$1</code></pre>')
+    .replace(/```([\s\S]+?)
+```/g, '<pre><code>$1</code></pre>')
     .replace(/`([^`]+?)`/g, '<code>$1</code>')
     .replace(/\*\*([\s\S]+?)\*\*/g, '<strong>$1</strong>');
 }
