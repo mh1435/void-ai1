@@ -1,0 +1,218 @@
+{
+  "Fanny": {
+    "name": "Fanny",
+    "role": "Assassin",
+    "counters": ["Khufra", "Lolita", "Franco", "Minotaur"],
+    "best_build": ["Raptor Machete", "Tough Boots", "Endless Battle", "Blade of Despair", "Berserker's Fury", "Malefic Roar"],
+    "skill_combo": "Cable Drift (Skill 1) onto a wall to gain Steel Cable stacks, then Cut Throat (Skill 2) to dash and slash, finishing with Ultimate (Steel Cable Dance) on a grouped target.",
+    "team_combo": ["Khufra", "Atlas", "Tigreal"]
+  },
+  "Granger": {
+    "name": "Granger",
+    "role": "Marksman",
+    "counters": ["Khufra", "Franco", "Helcurt", "Saber"],
+    "best_build": ["Demon Hunter Sword", "Swift Boots", "Berserker's Fury", "Scarlet Phantom", "Malefic Roar", "Blade of Despair"],
+    "skill_combo": "Use Skill 1 (Rhapsody) to reload while moving, Skill 2 (Crescendo) to immobilize and burst, then auto-attack reset.",
+    "team_combo": ["Angela", "Mathilda", "Estes"]
+  },
+  "Lancelot": {
+    "name": "Lancelot",
+    "role": "Assassin",
+    "counters": ["Khufra", "Franco", "Lolita", "Diggie"],
+    "best_build": ["Raptor Machete", "Swift Boots", "Endless Battle", "Blade of Despair", "Malefic Roar", "Berserker's Fury"],
+    "skill_combo": "Skill 1 (Puncture Spear) to gain a shield and dash, Skill 2 (Coup De Grace) to dash again and slow, then Ultimate (Glory Dance) for invincible burst damage.",
+    "team_combo": ["Tigreal", "Khufra", "Angela"]
+  },
+  "Angela": {
+    "name": "Angela",
+    "role": "Support",
+    "counters": ["Helcurt", "Saber", "Lancelot", "Selena"],
+    "best_build": ["Arcane Boots", "Mage's Blessing", "Holy Crystal", "Genius Wand", "Lightning Truncheon", "Concentrated Energy"],
+    "skill_combo": "Skill 1 (Heart Shock) for poke and slow, Skill 2 (Touch of Heart) to peel for allies, Ultimate (Love Waves) to merge with a damage-dealing teammate.",
+    "team_combo": ["Granger", "Claude", "Karrie"]
+  },
+  "Tigreal": {
+    "name": "Tigreal",
+    "role": "Tank",
+    "counters": ["Lesley", "Karrie", "Yve", "Pharsa"],
+    "best_build": ["Tough Boots", "Dominance Ice", "Antique Cuirass", "Athena's Shield", "Immortality", "Brute Force Breastplate"],
+    "skill_combo": "Skill 1 (Sacred Bull) to charge and stun, Skill 2 (Attention) to taunt enemies, Ultimate (Implosion) to pull and group the enemy team for follow-up.",
+    "team_combo": ["Granger", "Lesley", "Karrie"]
+  },
+  "Gusion": {
+    "name": "Gusion",
+    "role": "Assassin",
+    "counters": ["Khufra", "Franco", "Lolita", "Minotaur"],
+    "best_build": ["Magic Power Sneakers", "Lightning Truncheon", "Genius Wand", "Holy Crystal", "Clock of Destiny", "Concentrated Energy"],
+    "skill_combo": "Skill 2 (Sword Glare) to throw daggers, Skill 1 (Multiple Sword) to dash and reset, Ultimate (Thorned Rose) to slow and finish, retrieving daggers for cooldown reset.",
+    "team_combo": ["Khufra", "Tigreal", "Angela"]
+  },
+  "Chou": {
+    "name": "Chou",
+    "role": "Fighter",
+    "counters": ["Khufra", "Franco", "Diggie", "Floryn"],
+    "best_build": ["Tough Boots", "Endless Battle", "Blade of Despair", "Brute Force Breastplate", "Antique Cuirass", "Immortality"],
+    "skill_combo": "Skill 1 (Jab) to poke and reposition, Skill 2 (Shunpo) to dash in, Ultimate (Savage Kick) to kick enemies into your team's burst.",
+    "team_combo": ["Lancelot", "Gusion", "Granger"]
+  },
+  "Ling": {
+    "name": "Ling",
+    "role": "Assassin",
+    "counters": ["Khufra", "Lolita", "Helcurt", "Diggie"],
+    "best_build": ["Raptor Machete", "Swift Boots", "Endless Battle", "Blade of Despair", "Malefic Roar", "Berserker's Fury"],
+    "skill_combo": "Use Skill 1 (Wind Blade) for sustained attack stacks, Skill 2 (Wall Walk) to reach elevated terrain for surprise dives, Ultimate (Sword Trace) to reset on kills.",
+    "team_combo": ["Khufra", "Angela", "Tigreal"]
+  },
+  "Kagura": {
+    "name": "Kagura",
+    "role": "Mage",
+    "counters": ["Helcurt", "Saber", "Lancelot", "Natalia"],
+    "best_build": ["Magic Power Sneakers", "Holy Crystal", "Lightning Truncheon", "Genius Wand", "Clock of Destiny", "Concentrated Energy"],
+    "skill_combo": "Skill 1 (Rasho Umbrella) to throw and pull back, Skill 2 (Seimei Oboro) to dash through the umbrella for burst, Ultimate (Garyo Tensei) for an unblockable line nuke.",
+    "team_combo": ["Tigreal", "Khufra", "Franco"]
+  },
+  "Esmeralda": {
+    "name": "Esmeralda",
+    "role": "Mage/Tank",
+    "counters": ["Lesley", "Karrie", "Pharsa", "Yve"],
+    "best_build": ["Tough Boots", "Dominance Ice", "Athena's Shield", "Holy Crystal", "Genius Wand", "Immortality"],
+    "skill_combo": "Skill 1 (Forbidden Crystal) to mark for shield-stealing, Skill 2 (Astral Spirit) to roam and engage, Ultimate (Pendulum of Destiny) to absorb shields and burst.",
+    "team_combo": ["Granger", "Claude", "Karrie"]
+  },
+  "Lesley": {
+    "name": "Lesley",
+    "role": "Marksman",
+    "counters": ["Helcurt", "Natalia", "Lancelot", "Saber"],
+    "best_build": ["Demon Hunter Sword", "Swift Boots", "Berserker's Fury", "Scarlet Phantom", "Malefic Roar", "Blade of Despair"],
+    "skill_combo": "Stay in Stealth Shot for bonus damage on Skill 1 (Master of Sniper), use Skill 2 (Disable) to escape, Ultimate (Ace of the Sniper) to one-shot squishy targets.",
+    "team_combo": ["Tigreal", "Khufra", "Diggie"]
+  },
+  "Karrie": {
+    "name": "Karrie",
+    "role": "Marksman",
+    "counters": ["Helcurt", "Natalia", "Diggie", "Khufra"],
+    "best_build": ["Demon Hunter Sword", "Swift Boots", "Berserker's Fury", "Malefic Roar", "Blade of Despair", "Wind of Nature"],
+    "skill_combo": "Skill 2 (Steel Wave) to pierce and weaken armor, true-damage autos pierce regen shields, Ultimate (Pursuit) to dash and slow groups.",
+    "team_combo": ["Angela", "Estes", "Tigreal"]
+  },
+  "Khufra": {
+    "name": "Khufra",
+    "role": "Tank",
+    "counters": ["Esmeralda", "Pharsa", "Lunox", "Valentina"],
+    "best_build": ["Tough Boots", "Dominance Ice", "Antique Cuirass", "Athena's Shield", "Immortality", "Brute Force Breastplate"],
+    "skill_combo": "Skill 1 (Spinning Roll) to engage, Skill 2 (Bouncing Ball) to knock up and stun, Ultimate (Tyrant's Rage) to root channelers (great vs Fanny/Gusion/Selena).",
+    "team_combo": ["Fanny", "Gusion", "Granger"]
+  },
+  "Mathilda": {
+    "name": "Mathilda",
+    "role": "Support",
+    "counters": ["Helcurt", "Lancelot", "Saber", "Selena"],
+    "best_build": ["Arcane Boots", "Wind of Nature", "Genius Wand", "Holy Crystal", "Magic Shoes", "Concentrated Energy"],
+    "skill_combo": "Skill 1 (Pulling Wind) to root and dash, Skill 2 (Flowing Time) to grant allies movement speed and shield, Ultimate (Space-time Travel) to reposition the whole team.",
+    "team_combo": ["Granger", "Karrie", "Bruno"]
+  },
+  "Yu Zhong": {
+    "name": "Yu Zhong",
+    "role": "Fighter",
+    "counters": ["Khufra", "Franco", "Atlas", "Diggie"],
+    "best_build": ["Tough Boots", "Endless Battle", "Blade of Despair", "Brute Force Breastplate", "Antique Cuirass", "Immortality"],
+    "skill_combo": "Skill 1 (Blood Sea) to mark targets, Skill 2 (Surging Waves) to dash, Ultimate (Dragon's Wrath) to fly and slam down for area burst and lifesteal.",
+    "team_combo": ["Mathilda", "Angela", "Tigreal"]
+  },
+  "Paquito": {
+    "name": "Paquito",
+    "role": "Fighter",
+    "counters": ["Khufra", "Franco", "Diggie", "Atlas"],
+    "best_build": ["Tough Boots", "Endless Battle", "Blade of Despair", "Brute Force Breastplate", "Antique Cuirass", "Immortality"],
+    "skill_combo": "Skill 1 (Smart Combo) chains into different finishers based on input, Skill 2 (Heavy Punch) to knock back, Ultimate (Explosive Spike) to launch enemies for team follow-up.",
+    "team_combo": ["Tigreal", "Angela", "Khufra"]
+  },
+  "Hayabusa": {
+    "name": "Hayabusa",
+    "role": "Assassin",
+    "counters": ["Khufra", "Franco", "Lolita", "Diggie"],
+    "best_build": ["Raptor Machete", "Swift Boots", "Endless Battle", "Blade of Despair", "Malefic Roar", "Berserker's Fury"],
+    "skill_combo": "Skill 1 (Shadow Kill) to deploy shadows, Skill 2 (Phantom Shuriken) to slow, Ultimate (Phantom Ninjutsu) to teleport between shadows for repositioning and burst.",
+    "team_combo": ["Khufra", "Tigreal", "Angela"]
+  },
+  "Saber": {
+    "name": "Saber",
+    "role": "Assassin",
+    "counters": ["Khufra", "Franco", "Atlas", "Lolita"],
+    "best_build": ["Raptor Machete", "Swift Boots", "Endless Battle", "Blade of Despair", "Malefic Roar", "Berserker's Fury"],
+    "skill_combo": "Skill 1 (Triple Sweep) to mark, Skill 2 (Shadow Spear) to dash and pull, Ultimate (Star Shattering Blade) to lock down and execute a single squishy target.",
+    "team_combo": ["Tigreal", "Franco", "Angela"]
+  },
+  "Layla": {
+    "name": "Layla",
+    "role": "Marksman",
+    "counters": ["Helcurt", "Natalia", "Lancelot", "Saber"],
+    "best_build": ["Demon Hunter Sword", "Swift Boots", "Berserker's Fury", "Scarlet Phantom", "Malefic Roar", "Blade of Despair"],
+    "skill_combo": "Skill 1 (Malefic Bomb) to poke, Skill 2 (Void Projectile) for a piercing line of damage, Ultimate (Destruction Dive) for a long-range execute.",
+    "team_combo": ["Tigreal", "Khufra", "Diggie"]
+  },
+  "Miya": {
+    "name": "Miya",
+    "role": "Marksman",
+    "counters": ["Helcurt", "Natalia", "Lancelot", "Saber"],
+    "best_build": ["Demon Hunter Sword", "Swift Boots", "Berserker's Fury", "Scarlet Phantom", "Malefic Roar", "Blade of Despair"],
+    "skill_combo": "Skill 1 (Rain of Arrows) for wave clear, Skill 2 (Hawkeye) for true damage burst, Ultimate (Hidden Moonlight) for stealth repositioning before engaging.",
+    "team_combo": ["Tigreal", "Khufra", "Estes"]
+  },
+  "Alucard": {
+    "name": "Alucard",
+    "role": "Fighter",
+    "counters": ["Khufra", "Franco", "Atlas", "Diggie"],
+    "best_build": ["Tough Boots", "Endless Battle", "Blade of Despair", "Brute Force Breastplate", "Antique Cuirass", "Immortality"],
+    "skill_combo": "Skill 1 (Groundsplitter) to dash and slow, Skill 2 (Whirling Smash) for sustained area damage and lifesteal, Ultimate (Fission Wave) to dash for a kill reset.",
+    "team_combo": ["Tigreal", "Angela", "Mathilda"]
+  },
+  "Zilong": {
+    "name": "Zilong",
+    "role": "Fighter",
+    "counters": ["Khufra", "Franco", "Atlas", "Lolita"],
+    "best_build": ["Tough Boots", "Endless Battle", "Blade of Despair", "Brute Force Breastplate", "Antique Cuirass", "Immortality"],
+    "skill_combo": "Skill 1 (Spear Strike) to dash, Skill 2 (Supreme Warrior) for an attack speed buff, Ultimate (Heroic Charge) to leap in and stun for follow-up.",
+    "team_combo": ["Tigreal", "Angela", "Estes"]
+  },
+  "Fredrinn": {
+    "name": "Fredrinn",
+    "role": "Fighter/Tank",
+    "counters": ["Khufra", "Franco", "Atlas", "Diggie"],
+    "best_build": ["Tough Boots", "Blade Armor", "Antique Cuirass", "Athena's Shield", "Immortality", "Brute Force Breastplate"],
+    "skill_combo": "Skill 1 (Searing Sword) to mark, Skill 2 (Eye of Vichama) to gain Wrath stacks, Ultimate (Falling Severity) to dive and execute marked targets.",
+    "team_combo": ["Mathilda", "Angela", "Tigreal"]
+  },
+  "Joy": {
+    "name": "Joy",
+    "role": "Assassin",
+    "counters": ["Khufra", "Franco", "Diggie", "Lolita"],
+    "best_build": ["Raptor Machete", "Swift Boots", "Endless Battle", "Blade of Despair", "Malefic Roar", "Berserker's Fury"],
+    "skill_combo": "Skill 1 (Dance of Stars) to bounce off enemies, Skill 2 (Aurora Blade) to gain a shield, Ultimate (Strings of Fate) to tether and slow grouped enemies.",
+    "team_combo": ["Khufra", "Tigreal", "Angela"]
+  },
+  "Arlott": {
+    "name": "Arlott",
+    "role": "Fighter",
+    "counters": ["Khufra", "Franco", "Atlas", "Diggie"],
+    "best_build": ["Tough Boots", "Endless Battle", "Blade of Despair", "Brute Force Breastplate", "Antique Cuirass", "Immortality"],
+    "skill_combo": "Skill 1 (Wind Edge) to dash and mark, Skill 2 (Crow Sanctuary) to summon crows for vision and damage, Ultimate (Indomitable Will) to dash through enemies for burst.",
+    "team_combo": ["Tigreal", "Angela", "Mathilda"]
+  },
+  "Suyou": {
+    "name": "Suyou",
+    "role": "Assassin",
+    "counters": ["Khufra", "Franco", "Lolita", "Diggie"],
+    "best_build": ["Raptor Machete", "Swift Boots", "Endless Battle", "Blade of Despair", "Malefic Roar", "Berserker's Fury"],
+    "skill_combo": "Skill 1 (Pesky Toolbox) to slow and reset, Skill 2 (Spike Slash) for burst and execute on low-HP targets, Ultimate (Stealthy Tools) for vision and team utility.",
+    "team_combo": ["Khufra", "Tigreal", "Angela"]
+  },
+  "Lukas": {
+    "name": "Lukas",
+    "role": "Fighter",
+    "counters": ["Khufra", "Franco", "Atlas", "Diggie"],
+    "best_build": ["Tough Boots", "Endless Battle", "Blade of Despair", "Brute Force Breastplate", "Antique Cuirass", "Immortality"],
+    "skill_combo": "Skill 1 (Soaring Slam) to dash and reset cooldown on hit, Skill 2 (Spinning Blades) for area damage, Ultimate (Tag Team) to mark and chain dashes onto enemies.",
+    "team_combo": ["Tigreal", "Angela", "Mathilda"]
+  }
+}
