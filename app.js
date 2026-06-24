@@ -41,16 +41,16 @@ const App = {
   modules: {}
 };
 
-// Static Local Content Engine for the GameHub
+// Static Local Content Engine for the GameHub (.png Extensions Fixed)
 const GameHubData = {
   heroes: [
-    { id: 'alpha', name: 'Alpha Prime', role: 'Vanguard', rarity: 'LEGENDARY', img: 'images/heroes/alpha.jpg', desc: 'Frontline cybernetic chassis built to absorb terminal impact parameters.' },
-    { id: 'phantom', name: 'Phantom Spectre', role: 'Infiltrator', rarity: 'EPIC', img: 'images/heroes/phantom.jpg', desc: 'Quantum stealth operator focused on structural node extraction.' },
-    { id: 'apex', name: 'Apex Titan', role: 'Enforcer', rarity: 'RARE', img: 'images/heroes/apex.jpg', desc: 'Heavy arms munitions engineer with localized gravity dampening fields.' }
+    { id: 'alpha', name: 'Alpha Prime', role: 'Vanguard', rarity: 'LEGENDARY', img: 'images/heroes/alpha.png', desc: 'Frontline cybernetic chassis built to absorb terminal impact parameters.' },
+    { id: 'phantom', name: 'Phantom Spectre', role: 'Infiltrator', rarity: 'EPIC', img: 'images/heroes/phantom.png', desc: 'Quantum stealth operator focused on structural node extraction.' },
+    { id: 'apex', name: 'Apex Titan', role: 'Enforcer', rarity: 'RARE', img: 'images/heroes/apex.png', desc: 'Heavy arms munitions engineer with localized gravity dampening fields.' }
   ],
   items: [
-    { id: 'core_mod', name: 'Overclock Module', type: 'Processor', tier: 'TIER III', img: 'images/items/core_mod.jpg', desc: 'Injects transient cycles to local instruction streams, elevating capability parameters.' },
-    { id: 'matrix_shield', name: 'Refractor Aegis', type: 'Shielding', tier: 'TIER II', img: 'images/items/matrix_shield.jpg', desc: 'Coherent energy plane engineered to disperse localized thermal distribution paths.' }
+    { id: 'core_mod', name: 'Overclock Module', type: 'Processor', tier: 'TIER III', img: 'images/items/core_mod.png', desc: 'Injects transient cycles to local instruction streams, elevating capability parameters.' },
+    { id: 'matrix_shield', name: 'Refractor Aegis', type: 'Shielding', tier: 'TIER II', img: 'images/items/matrix_shield.png', desc: 'Coherent energy plane engineered to disperse localized thermal distribution paths.' }
   ]
 };
 
@@ -452,7 +452,7 @@ function renderGameHubGridElements() {
     hGrid.innerHTML = GameHubData.heroes.map(hero => `
       <div class="hub-card" onclick="openGameHubDetailItem('heroes', '${hero.id}')">
         <div class="hub-card-media">
-          <img class="hub-card-img" src="${hero.img}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' style=\'fill:%23222\'><rect width=\'100\' height=\'100\'/></svg>'">
+          <img class="hub-card-img" src="${hero.img}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' style=\'fill:%23222\'><rect width=\'100\' height=\'100\'/><text x=\'50%\' y=\'50%\' dominant-baseline=\'middle\' text-anchor=\'middle\' fill=\'%23555\' font-family=\'monospace\'>MISSING PNG</text></svg>'">
           <span class="hub-card-badge">${hero.rarity}</span>
         </div>
         <div class="hub-card-overlay">
@@ -467,7 +467,7 @@ function renderGameHubGridElements() {
     iGrid.innerHTML = GameHubData.items.map(item => `
       <div class="hub-card" onclick="openGameHubDetailItem('items', '${item.id}')">
         <div class="hub-card-media">
-          <img class="hub-card-img" src="${item.img}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' style=\'fill:%23222\'><rect width=\'100\' height=\'100\'/></svg>'">
+          <img class="hub-card-img" src="${item.img}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' style=\'fill:%23222\'><rect width=\'100\' height=\'100\'/><text x=\'50%\' y=\'50%\' dominant-baseline=\'middle\' text-anchor=\'middle\' fill=\'%23555\' font-family=\'monospace\'>MISSING PNG</text></svg>'">
           <span class="hub-card-badge">${item.tier}</span>
         </div>
         <div class="hub-card-overlay">
