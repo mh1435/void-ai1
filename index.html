@@ -10,167 +10,133 @@
 <body data-theme-variant="frost">
 
   <div id="workspace-container">
-    
-    <aside id="sidebar-panel">
-      <div class="sidebar-identity">
-        <div class="void-glitch-logo">VOID</div>
-        <div class="status-pulse-row">
-          <span class="pulse-indicator status-online"></span>
-          <span class="monospace-label text-dim">NODE_M7_ACTIVE</span>
-        </div>
-      </div>
-      
-      <nav class="nav-pill-group">
-        <button class="tab-pill active" data-target="panel-terminal">
-          <span class="icon">▰</span> RUNTIME TERMINAL
-        </button>
-        <button class="tab-pill" data-target="panel-gamehub">
-          <span class="icon">❖</span> GAME HUB DATA
-        </button>
-        <button class="tab-pill" id="open-settings-btn">
-          <span class="icon">⚙</span> CORE OPTIONS
-        </button>
-        <button class="tab-pill" data-target="panel-prompt-library">
-          <span class="icon">📋</span> PROMPT LIBRARY
-        </button>
-        <button class="tab-pill" data-target="panel-system-logs">
-          <span class="icon">🔍</span> SYSTEM LOGS
-        </button>
-        <button class="tab-pill" data-target="panel-api-usage">
-          <span class="icon">📊</span> API METRICS
-        </button>
+    <header id="top-bar">
+      <div class="brand">VOID <span class="status text-dim">CORE::ONLINE</span></div>
+      <nav class="top-nav">
+        <button class="top-nav-btn active" data-target="view-intelligence">INTELLIGENCE</button>
+        <button class="top-nav-btn" data-target="view-workspace">WORKSPACE</button>
+        <button class="top-nav-btn action-btn-pill" id="open-settings-btn">⚙ CORE OPTIONS</button>
       </nav>
+    </header>
 
-      <div class="sidebar-user-profile">
-        <div class="profile-avatar">AI</div>
-        <div class="profile-info">
-          <div class="profile-name">System Administrator</div>
-          <div class="profile-status text-dimmonospace">UID: 0x7F99A</div>
+    <div id="workspace-canvas-floor">
+      
+      <div id="view-intelligence" class="view-tab active">
+        <div class="instrument-modules-bar">
+          <span class="monospace-label text-dim">INSTRUMENT MODULES:</span>
+          <button class="sub-nav-btn active" data-sub-target="sub-terminal">RUNTIME TERMINAL</button>
+          <button class="sub-nav-btn" data-sub-target="sub-prompts">PROMPT LIBRARY</button>
+          <button class="sub-nav-btn" data-sub-target="sub-logs">SYSTEM LOGS</button>
+          <button class="sub-nav-btn" data-sub-target="sub-analytics">API METRICS</button>
+        </div>
+
+        <div class="sub-view-content-wrap">
+          <div id="sub-terminal" class="sub-tab active">
+            <div class="terminal-layout-split">
+              <div class="chat-system-module">
+                <div id="messages-box" class="messages-container-scroll">
+                  <div class="chat-bubble assistant">
+                    <div class="bubble-meta">VOID::CORE // INITIALIZED</div>
+                    <div class="bubble-body">System execution loops online. Ready for model compilation or tactical offline matrix optimization commands.</div>
+                  </div>
+                </div>
+                <div class="chat-input-container">
+                  <textarea id="chat-input" placeholder="Query Matrix... (Press Enter to execute, Shift+Enter for newline)"></textarea>
+                  <div class="input-actions-bar">
+                    <button id="send-msg-btn" class="icon-trigger-btn primary">EXE ⏵</button>
+                  </div>
+                </div>
+              </div>
+              <div class="widget-deck-canvas" id="widget-board">
+                <div id="canvas-empty-msg" class="monospace text-dim">No runtime monitor layouts attached to active dashboard pipeline layer.</div>
+              </div>
+            </div>
+          </div>
+
+          <div id="sub-prompts" class="sub-tab">
+            <div class="panel-padded-wrap">
+              <header class="panel-inner-head">
+                <h2>PROMPT COMPILATION MATRIX</h2>
+                <button class="action-btn-pill" id="open-add-prompt-modal">+ NEW PROMPT</button>
+              </header>
+              <div class="prompt-filter-bar">
+                <input type="text" id="prompt-search-input" placeholder="Search compiled prompt templates...">
+              </div>
+              <div class="prompt-library-grid" id="prompt-library-grid-target"></div>
+            </div>
+          </div>
+
+          <div id="sub-logs" class="sub-tab">
+            <div class="panel-padded-wrap">
+              <header class="panel-inner-head">
+                <h2>SYSTEM EVENT STREAM MONITOR</h2>
+                <button class="action-btn-pill danger" id="clear-logs-btn">PURGE BUFFER</button>
+              </header>
+              <div class="logs-stream-box monospace" id="logs-stream-target">
+                <div class="log-row text-dim">[00:00:00] -- System core booted into memory array. Ready to listen.</div>
+              </div>
+            </div>
+          </div>
+
+          <div id="sub-analytics" class="sub-tab">
+            <div class="panel-padded-wrap">
+              <header class="panel-inner-head">
+                <h2>ANALYTIC TELEMETRY METRICS</h2>
+              </header>
+              <div class="metrics-grid">
+                <div class="metric-card">
+                  <div class="metric-title monospace">TOTAL QUERIES DISPATCHED</div>
+                  <div class="metric-value" id="metric-queries">0</div>
+                </div>
+                <div class="metric-card">
+                  <div class="metric-title monospace">TOTAL REPLIES PARSED</div>
+                  <div class="metric-value" id="metric-replies">0</div>
+                </div>
+                <div class="metric-card">
+                  <div class="metric-title monospace">ACTIVE CONVERSATION THREADS</div>
+                  <div class="metric-value" id="metric-threads">1</div>
+                </div>
+                <div class="metric-card">
+                  <div class="metric-title monospace">TOTAL SYSTEM TOKENS ESTIMATED</div>
+                  <div class="metric-value" id="metric-tokens">0</div>
+                </div>
+              </div>
+              <div class="chart-container-card">
+                <div class="metric-title monospace" style="margin-bottom:15px;">INTERACTION TRAFFIC STREAM</div>
+                <div class="bars-visual-recap" id="bars-visual-recap-target">
+                  <div class="bars-empty-note text-dim monospace">Awaiting inference transactions to render capacity telemetry...</div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div class="sidebar-bottom-stats monospace" id="welcome-stats-line">
-        INT::0 | MSG::0
-      </div>
-    </aside>
-
-    <main id="view-main" class="view-tab active">
-      <header id="top-bar">
-        <h1 id="workspace-title">RUNTIME TERMINAL</h1>
-        <div class="top-bar-actions">
-          <button class="action-btn-pill" id="clear-chat-btn">CLEAR SESSION</button>
-          <button class="action-btn-pill" data-add-widget="sys-stats">+ MONITOR WIDGET</button>
+      <div id="view-workspace" class="view-tab">
+        <div class="instrument-modules-bar">
+          <span class="monospace-label text-dim">REPOSITORY MODULES:</span>
+          <button class="gamehub-tab-btn sub-nav-btn active" data-hub-tab="heroes">HERO FILES</button>
+          <button class="gamehub-tab-btn sub-nav-btn" data-hub-tab="items">ITEM CORES</button>
+          <button class="action-btn-pill" data-add-widget="sys-stats" style="margin-left: auto;">+ MONITOR WIDGET</button>
         </div>
-      </header>
-
-      <div id="workspace-canvas-floor">
         
-        <div id="panel-terminal" class="view-tab active">
-          <div class="terminal-layout-split">
-            
-            <div class="chat-system-module">
-              <div id="messages-box" class="messages-container-scroll">
-                <div class="chat-bubble assistant">
-                  <div class="bubble-meta">VOID::CORE // INITIALIZED</div>
-                  <div class="bubble-body">System execution loops online. Ready for model compilation or tactical offline matrix optimization commands.</div>
-                </div>
-              </div>
-              
-              <div class="chat-input-container">
-                <textarea id="chat-input" placeholder="Query assistant node... (Press Enter to execute, Shift+Enter for newline)"></textarea>
-                <div class="input-actions-bar">
-                  <button id="send-msg-btn" class="icon-trigger-btn primary">EXE ⏵</button>
-                </div>
-              </div>
+        <div class="gamehub-container">
+          <div class="gamehub-content-view active" id="hub-view-heroes">
+            <div class="gamehub-search-wrapper">
+              <input type="text" id="hero-search-input" placeholder="Search operational hero database registers...">
             </div>
-
-            <div class="widget-deck-canvas" id="widget-board">
-              <div id="canvas-empty-msg" class="monospace text-dim">No runtime monitor layouts attached to active dashboard pipeline layer.</div>
+            <div class="hub-grid" id="heroes-grid-target"></div>
+          </div>
+          <div class="gamehub-content-view" id="hub-view-items">
+            <div class="gamehub-search-wrapper">
+              <input type="text" id="item-search-input" placeholder="Search equipment tier lists...">
             </div>
-
+            <div class="hub-grid" id="items-grid-target"></div>
           </div>
         </div>
-
-        <div id="panel-gamehub" class="view-tab">
-          <div class="gamehub-container">
-            <div class="gamehub-tabs">
-              <button class="gamehub-tab-btn active" data-hub-tab="heroes">HERO REPOSITORY</button>
-              <button class="gamehub-tab-btn" data-hub-tab="items">EQUIPMENT CORE</button>
-            </div>
-            <div class="gamehub-content-view active" id="hub-view-heroes">
-              <div class="gamehub-search-wrapper">
-                <input type="text" id="hero-search-input" placeholder="Search operational hero database registers...">
-              </div>
-              <div class="hub-grid" id="heroes-grid-target"></div>
-            </div>
-            <div class="gamehub-content-view" id="hub-view-items">
-              <div class="gamehub-search-wrapper">
-                <input type="text" id="item-search-input" placeholder="Search equipment tier lists...">
-              </div>
-              <div class="hub-grid" id="items-grid-target"></div>
-            </div>
-          </div>
-        </div>
-
-        <div id="panel-prompt-library" class="view-tab">
-          <div class="panel-padded-wrap">
-            <header class="panel-inner-head">
-              <h2>PROMPT COMPILATION MATRIX</h2>
-              <button class="action-btn-pill" id="open-add-prompt-modal">+ NEW PROMPT</button>
-            </header>
-            <div class="prompt-filter-bar">
-              <input type="text" id="prompt-search-input" placeholder="Search compiled prompt templates...">
-            </div>
-            <div class="prompt-library-grid" id="prompt-library-grid-target"></div>
-          </div>
-        </div>
-
-        <div id="panel-system-logs" class="view-tab">
-          <div class="panel-padded-wrap">
-            <header class="panel-inner-head">
-              <h2>SYSTEM EVENT STREAM MONITOR</h2>
-              <button class="action-btn-pill danger" id="clear-logs-btn">PURGE BUFFER</button>
-            </header>
-            <div class="logs-stream-box monospace" id="logs-stream-target">
-              <div class="log-row text-dim">[00:00:00] -- System core booted into memory array. Ready to listen.</div>
-            </div>
-          </div>
-        </div>
-
-        <div id="panel-api-usage" class="view-tab">
-          <div class="panel-padded-wrap">
-            <header class="panel-inner-head">
-              <h2>ANALYTIC TELEMETRY METRICS</h2>
-            </header>
-            <div class="metrics-grid">
-              <div class="metric-card">
-                <div class="metric-title monospace">TOTAL QUERIES DISPATCHED</div>
-                <div class="metric-value" id="metric-queries">0</div>
-              </div>
-              <div class="metric-card">
-                <div class="metric-title monospace">TOTAL REPLIES PARSED</div>
-                <div class="metric-value" id="metric-replies">0</div>
-              </div>
-              <div class="metric-card">
-                <div class="metric-title monospace">ACTIVE CONVERSATION THREADS</div>
-                <div class="metric-value" id="metric-threads">1</div>
-              </div>
-              <div class="metric-card">
-                <div class="metric-title monospace">TOTAL SYSTEM TOKENS ESTIMATED</div>
-                <div class="metric-value" id="metric-tokens">0</div>
-              </div>
-            </div>
-            <div class="chart-container-card">
-              <div class="metric-title monospace" style="margin-bottom:15px;">INTERACTION TRAFFIC STREAM</div>
-              <div class="bars-visual-recap" id="bars-visual-recap-target">
-                <div class="bars-empty-note text-dim monospace">Awaiting inference transactions to render capacity telemetry...</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
       </div>
-    </main>
+
+    </div>
 
     <div id="view-settings" class="view-tab">
       <header class="panel-sub-header">
