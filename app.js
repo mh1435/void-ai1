@@ -43,7 +43,8 @@ const App = {
 const widgetPositions = {};
 
 document.addEventListener('DOMContentLoaded', () => {
-  initNavigation();
+  initTopNavRouting();
+  initSubRouting();
   initSettingsLayout();
   initChatEngine();
   initWorkspaceGrid();
@@ -54,23 +55,23 @@ document.addEventListener('DOMContentLoaded', () => {
   loadApplicationConfig();
 });
 
-/* --- Navigation & Panel Orchestrator Routing --- */
-function initNavigation() {
-  document.querySelectorAll('.tab-pill').forEach(btn => {
+/* --- Top Navigation Routing (Intelligence vs Workspace) --- */
+function initTopNavRouting() {
+  document.querySelectorAll('.top-nav-btn:not(#open-settings-btn)').forEach(btn => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('.tab-pill').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.top-nav-btn').forEach(b => {
+        if (b.id !== 'open-settings-btn') b.classList.remove('active');
+      });
       document.querySelectorAll('#workspace-canvas-floor > .view-tab').forEach(t => t.classList.remove('active'));
       
       btn.classList.add('active');
-      const target = btn.getAttribute('data-target');
-      const tNode = document.getElementById(target);
-      if (tNode) tNode.classList.add('active');
-      
-      const topTitle = document.getElementById('workspace-title');
-      if (topTitle) topTitle.textContent = btn.textContent.replace(/▰|❖|⚙|📋|🔍|📊/g, '').trim();
+      const targetViewId = btn.getAttribute('data-target');
+      const targetView = document.getElementById(targetViewId);
+      if (targetView) targetView.classList.add('active');
     });
   });
 
+  // Settings Slide Panel Logic
   const openSettings = document.getElementById('open-settings-btn');
   const closeSettings = document.getElementById('close-settings-btn');
   const vSet = document.getElementById('view-settings');
@@ -79,6 +80,23 @@ function initNavigation() {
     openSettings.addEventListener('click', () => { vSet.classList.add('active'); });
     closeSettings.addEventListener('click', () => { vSet.classList.remove('active'); });
   }
+}
+
+/* --- Sub-Navigation Tabs (Sub-views) --- */
+function initSubRouting() {
+  document.querySelectorAll('.sub-nav-btn:not(.gamehub-tab-btn)').forEach(btn => {
+    btn.addEventListener('click', () => {
+      // Keep GameHub separate, target sub-tabs
+      const parentView = btn.closest('.view-tab');
+      parentView.querySelectorAll('.sub-nav-btn:not(.gamehub-tab-btn)').forEach(b => b.classList.remove('active'));
+      parentView.querySelectorAll('.sub-view-content-wrap > .sub-tab').forEach(t => t.classList.remove('active'));
+      
+      btn.classList.add('active');
+      const subTarget = btn.getAttribute('data-sub-target');
+      const targetSubTab = document.getElementById(subTarget);
+      if (targetSubTab) targetSubTab.classList.add('active');
+    });
+  });
 }
 
 /* --- System Application Preferences & Layout Actions --- */
@@ -216,7 +234,6 @@ function appendBubbleMessage(role, text) {
   const stamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   const label = role === 'user' ? 'USER::NODE' : 'VOID::CORE';
 
-  // Use the Marked library for rich markdown bubbles parsing
   let renderedBody = '';
   if (typeof marked !== 'undefined') {
     renderedBody = marked.parse(text);
@@ -359,11 +376,14 @@ function updateCanvasEmptyState() {
 function initGameHubLayout() {
   document.querySelectorAll('.gamehub-tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('.gamehub-tab-btn').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.gamehub-content-view').forEach(v => v.classList.remove('active'));
+      // Un-highlight all gamehub tabs, hide views
+      const parentView = btn.closest('.view-tab');
+      parentView.querySelectorAll('.gamehub-tab-btn').forEach(b => b.classList.remove('active'));
+      parentView.querySelectorAll('.gamehub-content-view').forEach(v => v.classList.remove('active'));
+      
       btn.classList.add('active');
-      const target = document.getElementById(`hub-view-${btn.getAttribute('data-hub-tab')}`);
-      if (target) target.classList.add('active');
+      const targetView = document.getElementById(`hub-view-${btn.getAttribute('data-hub-tab')}`);
+      if (targetView) targetView.classList.add('active');
     });
   });
 
@@ -439,6 +459,8 @@ function filterGameHubCollection(collection, query) {
 function openGameHubDetailItem(collection, id) {
   const dataset = GameHubData[collection].find(x => x.id === id);
   if (!dataset) return;
+  const pillTab = document.querySelector('[data-target="view-workspace"]');
+  if (pillTab) pillTab.click();
   appendBubbleMessage('assistant', `**[${dataset.name}]** Profile Asset Decoupled Readout:\nType Role Parameters: \`${dataset.role || dataset.type}\` — Active Registry Metadata Log Complete.`);
   appendSystemEventLog('info', `Loaded MLBB asset data parameters log read for: [${dataset.name.toUpperCase()}]`);
 }
@@ -511,8 +533,10 @@ function executePromptTemplatePayload(id) {
   const p = App.prompts.find(x => x.id === id);
   if (!p) return;
   
-  const pillTab = document.querySelector('[data-target="panel-terminal"]');
+  const pillTab = document.querySelector('[data-target="view-intelligence"]');
   if (pillTab) pillTab.click();
+  const termTab = document.querySelector('[data-sub-target="sub-terminal"]');
+  if (termTab) termTab.click();
   
   appendBubbleMessage('user', p.text);
   appendSystemEventLog('info', `Compiled system prompt template script locally: [${p.title.toUpperCase()}]`);
@@ -618,6 +642,5 @@ function persistSettingsToServer() {
 }
 
 function updateStatusDashboardLines() {
-  const line = document.getElementById('welcome-stats-line');
-  if (line) line.innerText = `INT::${App.stats.totalInteractions} | MSG::${App.stats.messages}`;
+  // Stats line mapping in top-bar or sub views
 }
