@@ -1,28 +1,130 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Void // GameHub Portal</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VOID // Game Hub Portal</title>
+  <link rel="stylesheet" href="style.css">
 </head>
-<body>
-    <div id="app-container">
-        <header>
-            <h1>VOID // GAMEHUB</h1>
-            <p class="subtitle">Tactical Performance Matrix Engine</p>
-        </header>
+<body data-theme-variant="frost">
 
-        <main>
-            <section id="hero-grid-section">
-                <h2>Active Hero Registry</h2>
-                <div id="hero-grid" class="card-grid"></div>
-            </section>
-        </main>
+  <!-- Core Main Grid Container Frame -->
+  <div id="workspace-container">
+    
+    <!-- Left Hand Control Pipeline Navigation -->
+    <aside id="sidebar-panel">
+      <div class="sidebar-identity">
+        <div class="void-glitch-logo">VOID</div>
+        <div class="status-pulse-row">
+          <span class="pulse-indicator status-online"></span>
+          <span class="monospace-label text-dim">NODE_M7_ACTIVE</span>
+        </div>
+      </div>
+      
+      <nav class="nav-pill-group">
+        <button class="tab-pill active" data-target="panel-terminal">
+          <span class="icon">▰</span> RUNTIME TERMINAL
+        </button>
+        <button class="tab-pill" data-target="panel-gamehub">
+          <span class="icon">❖</span> GAME HUB DATA
+        </button>
+        <button class="tab-pill" id="open-settings-btn">
+          <span class="icon">⚙</span> CORE OPTIONS
+        </button>
+      </nav>
+
+      <div class="sidebar-bottom-stats monospace" id="welcome-stats-line">
+        INT::0 | MSG::0
+      </div>
+    </aside>
+
+    <!-- Center Display Dashboard Canvas -->
+    <main id="view-main" class="view-tab active">
+      <header id="top-bar">
+        <h1 id="workspace-title">GAME HUB</h1>
+        <div class="top-bar-actions">
+          <button class="action-btn-pill" data-add-widget="sys-stats">+ MONITOR WIDGET</button>
+        </div>
+      </header>
+
+      <div id="workspace-canvas-floor">
+        
+        <!-- Tab 1: AI Assistant Interface & Script Workspace -->
+        <div id="panel-terminal" class="view-tab active">
+          <div class="terminal-layout-split">
+            
+            <div class="chat-system-module">
+              <div id="messages-box" class="messages-container-scroll">
+                <div class="chat-bubble assistant">
+                  <div class="bubble-meta">VOID::CORE // INITIALIZED</div>
+                  <div class="bubble-body">System execution loops online. Ready for game compilation or tactical offline matrix optimization commands.</div>
+                </div>
+              </div>
+              
+              <!-- Refactored Input Frame — Removed Reset & Voice elements -->
+              <div class="chat-input-container">
+                <textarea id="chat-input" placeholder="Query assistant node... (Press Enter to execute)"></textarea>
+                <div class="input-actions-bar">
+                  <button id="send-msg-btn" class="icon-trigger-btn primary">EXE ⏵</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Draggable Widget Canvas Deck Area -->
+            <div class="widget-deck-canvas" id="widget-board">
+              <div id="canvas-empty-msg" class="monospace text-dim">No runtime monitor layouts attached to active dashboard pipeline layer.</div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Tab 2: Decoupled GameHub Content Panel Layout -->
+        <div id="panel-gamehub" class="view-tab">
+          <div class="gamehub-container">
+            <div class="gamehub-tabs">
+              <button class="gamehub-tab-btn active" data-hub-tab="heroes">HERO REPOSITORY</button>
+              <button class="gamehub-tab-btn" data-hub-tab="items">EQUIPMENT CORE</button>
+            </div>
+            <div class="gamehub-content-view active" id="hub-view-heroes">
+              <div class="hub-grid" id="heroes-grid-target"></div>
+            </div>
+            <div class="gamehub-content-view" id="hub-view-items">
+              <div class="hub-grid" id="items-grid-target"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+
+    <!-- Side View Panel: Options Overlays -->
+    <div id="view-settings" class="view-tab">
+      <header class="panel-sub-header">
+        <h2>CORE APP CONFIGURATION</h2>
+        <button id="close-settings-btn" class="close-panel-pill">✕ BACK</button>
+      </header>
+      <div class="settings-view-body">
+        <div class="settings-panel-card">
+          <h3>INTELLIGENCE PROVIDER KEY ACCESS</h3>
+          <div class="form-row"><label>OpenRouter Token</label><input type="password" id="input-api-key"></div>
+          <div class="form-row"><label>Groq Token</label><input type="password" id="input-groq-key"></div>
+          <div class="form-row"><label>Gemini Token</label><input type="password" id="input-gemini-key"></div>
+          <button id="save-keys-btn" class="save-action-btn">PERSIST ACCESS TOKENS</button>
+        </div>
+        <div class="settings-panel-card">
+          <h3>INFERENCE MODEL OVERRIDES</h3>
+          <div class="form-row"><label>OpenRouter Primary</label><input type="text" id="input-model"></div>
+          <div class="form-row"><label>Groq Engine Target</label><input type="text" id="input-groq-model"></div>
+          <div class="form-row"><label>Gemini Engine Target</label><input type="text" id="input-gemini-model"></div>
+          <button id="save-models-btn" class="save-action-btn">COMPILE CORE NODES</button>
+        </div>
+      </div>
     </div>
 
-    <!-- Core Engine Scripts -->
-    <script src="gamehub-data.js"></script>
-    <script src="app.js"></script>
+  </div>
+
+  <!-- Component System Injections -->
+  <script src="gamehub-data.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
