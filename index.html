@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VOID // AI Studio Portal</title>
+  <title>VOID // TERMINAL CORE</title>
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/marked@4.3.0/marked.min.js"></script>
 </head>
@@ -11,11 +11,11 @@
 
   <div id="workspace-container">
     <header id="top-bar">
-      <div class="brand">VOID <span class="status text-dim">CORE::ONLINE</span></div>
+      <div class="brand monospace">VOID <span class="status text-dimmonospace">NODE_M7_ACTIVE</span></div>
       <nav class="top-nav">
-        <button class="top-nav-btn active" data-target="view-intelligence">INTELLIGENCE</button>
-        <button class="top-nav-btn" data-target="view-workspace">WORKSPACE</button>
-        <button class="top-nav-btn action-btn-pill" id="open-settings-btn">⚙ CORE OPTIONS</button>
+        <button class="top-nav-btn monospace active" data-target="view-intelligence">INTELLIGENCE</button>
+        <button class="top-nav-btn monospace" data-target="view-workspace">WORKSPACE</button>
+        <button class="top-nav-btn action-btn-pill monospace" id="open-settings-btn">> CONFIG</button>
       </nav>
     </header>
 
@@ -23,11 +23,11 @@
       
       <div id="view-intelligence" class="view-tab active">
         <div class="instrument-modules-bar">
-          <span class="monospace-label text-dim">INSTRUMENT MODULES:</span>
-          <button class="sub-nav-btn active" data-sub-target="sub-terminal">RUNTIME TERMINAL</button>
-          <button class="sub-nav-btn" data-sub-target="sub-prompts">PROMPT LIBRARY</button>
-          <button class="sub-nav-btn" data-sub-target="sub-logs">SYSTEM LOGS</button>
-          <button class="sub-nav-btn" data-sub-target="sub-analytics">API METRICS</button>
+          <span class="monospace-label text-dimmonospace">INSTRUMENT MODULES:</span>
+          <button class="sub-nav-btn monospace active" data-sub-target="sub-terminal">RUNTIME TERMINAL</button>
+          <button class="sub-nav-btn monospace" data-sub-target="sub-prompts">PROMPT LIBRARY</button>
+          <button class="sub-nav-btn monospace" data-sub-target="sub-logs">SYSTEM LOGS</button>
+          <button class="sub-nav-btn monospace" data-sub-target="sub-analytics">API METRICS</button>
         </div>
 
         <div class="sub-view-content-wrap">
@@ -36,19 +36,19 @@
               <div class="chat-system-module">
                 <div id="messages-box" class="messages-container-scroll">
                   <div class="chat-bubble assistant">
-                    <div class="bubble-meta">VOID::CORE // INITIALIZED</div>
-                    <div class="bubble-body">System execution loops online. Ready for model compilation or tactical offline matrix optimization commands.</div>
+                    <div class="bubble-meta monospace">VOID::CORE // INITIALIZED</div>
+                    <div class="bubble-body monospace">System execution loops online. Ready for model compilation or tactical offline matrix optimization commands.</div>
                   </div>
                 </div>
                 <div class="chat-input-container">
-                  <textarea id="chat-input" placeholder="Query Matrix... (Press Enter to execute, Shift+Enter for newline)"></textarea>
+                  <textarea id="chat-input" class="monospace" placeholder="Query Matrix... (Press Enter to execute, Shift+Enter for newline)"></textarea>
                   <div class="input-actions-bar">
-                    <button id="send-msg-btn" class="icon-trigger-btn primary">EXE ⏵</button>
+                    <button id="send-msg-btn" class="icon-trigger-btn monospace primary">EXE ⏵</button>
                   </div>
                 </div>
               </div>
               <div class="widget-deck-canvas" id="widget-board">
-                <div id="canvas-empty-msg" class="monospace text-dim">No runtime monitor layouts attached to active dashboard pipeline layer.</div>
+                <div id="canvas-empty-msg" class="monospace text-dimmonospace">No runtime monitor layouts attached to active dashboard pipeline layer.</div>
               </div>
             </div>
           </div>
@@ -56,11 +56,11 @@
           <div id="sub-prompts" class="sub-tab">
             <div class="panel-padded-wrap">
               <header class="panel-inner-head">
-                <h2>PROMPT COMPILATION MATRIX</h2>
-                <button class="action-btn-pill" id="open-add-prompt-modal">+ NEW PROMPT</button>
+                <h2 class="monospace">PROMPT COMPILATION MATRIX</h2>
+                <button class="action-btn-pill monospace" id="open-add-prompt-modal">+ NEW PROMPT</button>
               </header>
               <div class="prompt-filter-bar">
-                <input type="text" id="prompt-search-input" placeholder="Search compiled prompt templates...">
+                <input type="text" id="prompt-search-input" class="monospace" placeholder="Search compiled prompt templates...">
               </div>
               <div class="prompt-library-grid" id="prompt-library-grid-target"></div>
             </div>
@@ -69,11 +69,11 @@
           <div id="sub-logs" class="sub-tab">
             <div class="panel-padded-wrap">
               <header class="panel-inner-head">
-                <h2>SYSTEM EVENT STREAM MONITOR</h2>
-                <button class="action-btn-pill danger" id="clear-logs-btn">PURGE BUFFER</button>
+                <h2 class="monospace">SYSTEM EVENT STREAM MONITOR</h2>
+                <button class="action-btn-pill danger monospace" id="clear-logs-btn">PURGE BUFFER</button>
               </header>
               <div class="logs-stream-box monospace" id="logs-stream-target">
-                <div class="log-row text-dim">[00:00:00] -- System core booted into memory array. Ready to listen.</div>
+                <div class="log-row text-dimmonospace">[00:00:00] -- System core booted into memory array. Ready to listen.</div>
               </div>
             </div>
           </div>
@@ -81,30 +81,30 @@
           <div id="sub-analytics" class="sub-tab">
             <div class="panel-padded-wrap">
               <header class="panel-inner-head">
-                <h2>ANALYTIC TELEMETRY METRICS</h2>
+                <h2 class="monospace">ANALYTIC TELEMETRY METRICS</h2>
               </header>
               <div class="metrics-grid">
                 <div class="metric-card">
                   <div class="metric-title monospace">TOTAL QUERIES DISPATCHED</div>
-                  <div class="metric-value" id="metric-queries">0</div>
+                  <div class="metric-value monospace" id="metric-queries">0</div>
                 </div>
                 <div class="metric-card">
                   <div class="metric-title monospace">TOTAL REPLIES PARSED</div>
-                  <div class="metric-value" id="metric-replies">0</div>
+                  <div class="metric-value monospace" id="metric-replies">0</div>
                 </div>
                 <div class="metric-card">
                   <div class="metric-title monospace">ACTIVE CONVERSATION THREADS</div>
-                  <div class="metric-value" id="metric-threads">1</div>
+                  <div class="metric-value monospace" id="metric-threads">1</div>
                 </div>
                 <div class="metric-card">
                   <div class="metric-title monospace">TOTAL SYSTEM TOKENS ESTIMATED</div>
-                  <div class="metric-value" id="metric-tokens">0</div>
+                  <div class="metric-value monospace" id="metric-tokens">0</div>
                 </div>
               </div>
               <div class="chart-container-card">
                 <div class="metric-title monospace" style="margin-bottom:15px;">INTERACTION TRAFFIC STREAM</div>
                 <div class="bars-visual-recap" id="bars-visual-recap-target">
-                  <div class="bars-empty-note text-dim monospace">Awaiting inference transactions to render capacity telemetry...</div>
+                  <div class="bars-empty-note text-dimmonospace monospace">Awaiting inference transactions to render capacity telemetry...</div>
                 </div>
               </div>
             </div>
@@ -114,22 +114,22 @@
 
       <div id="view-workspace" class="view-tab">
         <div class="instrument-modules-bar">
-          <span class="monospace-label text-dim">REPOSITORY MODULES:</span>
-          <button class="gamehub-tab-btn sub-nav-btn active" data-hub-tab="heroes">HERO FILES</button>
-          <button class="gamehub-tab-btn sub-nav-btn" data-hub-tab="items">ITEM CORES</button>
-          <button class="action-btn-pill" data-add-widget="sys-stats" style="margin-left: auto;">+ MONITOR WIDGET</button>
+          <span class="monospace-label text-dimmonospace">REPOSITORY MODULES:</span>
+          <button class="gamehub-tab-btn sub-nav-btn monospace active" data-hub-tab="heroes">HERO FILES</button>
+          <button class="gamehub-tab-btn sub-nav-btn monospace" data-hub-tab="items">ITEM CORES</button>
+          <button class="action-btn-pill monospace" data-add-widget="sys-stats" style="margin-left: auto;">+ MONITOR WIDGET</button>
         </div>
         
         <div class="gamehub-container">
           <div class="gamehub-content-view active" id="hub-view-heroes">
             <div class="gamehub-search-wrapper">
-              <input type="text" id="hero-search-input" placeholder="Search operational hero database registers...">
+              <input type="text" id="hero-search-input" class="monospace" placeholder="Search operational hero database registers...">
             </div>
             <div class="hub-grid" id="heroes-grid-target"></div>
           </div>
           <div class="gamehub-content-view" id="hub-view-items">
             <div class="gamehub-search-wrapper">
-              <input type="text" id="item-search-input" placeholder="Search equipment tier lists...">
+              <input type="text" id="item-search-input" class="monospace" placeholder="Search equipment tier lists...">
             </div>
             <div class="hub-grid" id="items-grid-target"></div>
           </div>
@@ -140,60 +140,60 @@
 
     <div id="view-settings" class="view-tab">
       <header class="panel-sub-header">
-        <h2>CORE APP CONFIGURATION</h2>
-        <button id="close-settings-btn" class="close-panel-pill">✕ BACK</button>
+        <h2 class="monospace">CORE APP CONFIGURATION</h2>
+        <button id="close-settings-btn" class="close-panel-pill monospace">✕ BACK</button>
       </header>
       <div class="settings-view-body">
         
         <div class="settings-panel-card">
-          <h3>INTELLIGENCE PROVIDER KEY ACCESS</h3>
-          <div class="form-row"><label>OpenRouter Token</label><input type="password" id="input-api-key" placeholder="sk-or-..."></div>
-          <div class="form-row"><label>Groq Token</label><input type="password" id="input-groq-key" placeholder="gsk_..."></div>
-          <div class="form-row"><label>Gemini Token</label><input type="password" id="input-gemini-key" placeholder="AIzaSy..."></div>
-          <div class="form-row"><label>Together AI Token</label><input type="password" id="input-together-key" placeholder="bearer..."></div>
-          <div class="form-row"><label>Mistral AI Token</label><input type="password" id="input-mistral-key" placeholder="ms-..."></div>
-          <button id="save-keys-btn" class="save-action-btn">PERSIST ACCESS TOKENS</button>
+          <h3 class="monospace">INTELLIGENCE PROVIDER KEY ACCESS</h3>
+          <div class="form-row"><label class="monospace">OpenRouter Token</label><input type="password" class="monospace" id="input-api-key" placeholder="sk-or-..."></div>
+          <div class="form-row"><label class="monospace">Groq Token</label><input type="password" class="monospace" id="input-groq-key" placeholder="gsk_..."></div>
+          <div class="form-row"><label class="monospace">Gemini Token</label><input type="password" class="monospace" id="input-gemini-key" placeholder="AIzaSy..."></div>
+          <div class="form-row"><label class="monospace">Together AI Token</label><input type="password" class="monospace" id="input-together-key" placeholder="bearer..."></div>
+          <div class="form-row"><label class="monospace">Mistral AI Token</label><input type="password" class="monospace" id="input-mistral-key" placeholder="ms-..."></div>
+          <button id="save-keys-btn" class="save-action-btn monospace">PERSIST ACCESS TOKENS</button>
         </div>
 
         <div class="settings-panel-card">
-          <h3>INFERENCE MODEL OVERRIDES</h3>
-          <div class="form-row"><label>OpenRouter Primary</label><input type="text" id="input-model" placeholder="meta-llama/llama-3.2-3b-instruct:free"></div>
-          <div class="form-row"><label>Groq Engine Target</label><input type="text" id="input-groq-model" placeholder="llama-3.3-70b-versatile"></div>
-          <div class="form-row"><label>Gemini Engine Target</label><input type="text" id="input-gemini-model" placeholder="gemini-2.5-flash"></div>
-          <div class="form-row"><label>Together AI Target</label><input type="text" id="input-together-model" placeholder="meta-llama/Llama-3.2-70B-Instruct-Turbo"></div>
-          <div class="form-row"><label>Mistral Engine Target</label><input type="text" id="input-mistral-model" placeholder="mistral-large-latest"></div>
-          <button id="save-models-btn" class="save-action-btn">COMPILE CORE NODES</button>
+          <h3 class="monospace">INFERENCE MODEL OVERRIDES</h3>
+          <div class="form-row"><label class="monospace">OpenRouter Primary</label><input type="text" class="monospace" id="input-model" placeholder="meta-llama/llama-3.2-3b-instruct:free"></div>
+          <div class="form-row"><label class="monospace">Groq Engine Target</label><input type="text" class="monospace" id="input-groq-model" placeholder="llama-3.3-70b-versatile"></div>
+          <div class="form-row"><label class="monospace">Gemini Engine Target</label><input type="text" class="monospace" id="input-gemini-model" placeholder="gemini-2.5-flash"></div>
+          <div class="form-row"><label class="monospace">Together AI Target</label><input type="text" class="monospace" id="input-together-model" placeholder="meta-llama/Llama-3.2-70B-Instruct-Turbo"></div>
+          <div class="form-row"><label class="monospace">Mistral Engine Target</label><input type="text" class="monospace" id="input-mistral-model" placeholder="mistral-large-latest"></div>
+          <button id="save-models-btn" class="save-action-btn monospace">COMPILE CORE NODES</button>
         </div>
 
         <div class="settings-panel-card">
-          <h3>SYSTEM APPLICATION PREFERENCES</h3>
+          <h3 class="monospace">SYSTEM APPLICATION PREFERENCES</h3>
           <div class="form-row inline-check">
-            <input type="checkbox" id="chk-speech"><label for="chk-speech">Enable Text-to-Speech Output</label>
+            <input type="checkbox" id="chk-speech"><label class="monospace" for="chk-speech">Enable Text-to-Speech Output</label>
           </div>
           <div class="form-row inline-check">
-            <input type="checkbox" id="chk-motion"><label for="chk-motion">Reduce Application Visual Motion</label>
+            <input type="checkbox" id="chk-motion"><label class="monospace" for="chk-motion">Reduce Application Visual Motion</label>
           </div>
           <div class="form-row inline-check">
-            <input type="checkbox" id="chk-float-assist"><label for="chk-float-assist">Enable Floating Assistant Interface Panel</label>
+            <input type="checkbox" id="chk-float-assist"><label class="monospace" for="chk-float-assist">Enable Floating Assistant Interface Panel</label>
           </div>
           <div class="form-row">
-            <label>Interface Response Paradigm</label>
-            <select id="select-response-mode">
+            <label class="monospace">Interface Response Paradigm</label>
+            <select id="select-response-mode" class="monospace">
               <option value="standard">Standard Analytical Assistant</option>
               <option value="concise">Concise Telemetry Readings</option>
               <option value="code-heavy">Code-Heavy Synthesis Engine</option>
             </select>
           </div>
           <div class="form-row">
-            <label>Application Layout Color Theme</label>
-            <select id="select-theme">
+            <label class="monospace">Application Layout Color Theme</label>
+            <select id="select-theme" class="monospace">
               <option value="frost">Ice Cold Frost (Dark Default)</option>
               <option value="crimson">Crimson Matrix Matrix</option>
               <option value="amber">Amber Terminal Grid</option>
               <option value="emerald">Emerald Void Frame</option>
             </select>
           </div>
-          <button id="save-preferences-btn" class="save-action-btn">APPLY SYSTEM PREFERENCES</button>
+          <button id="save-preferences-btn" class="save-action-btn monospace">APPLY SYSTEM PREFERENCES</button>
         </div>
 
       </div>
@@ -203,14 +203,14 @@
   <div id="modal-prompt-overlay" class="modal-system-backdrop">
     <div class="modal-card-body">
       <header class="modal-head">
-        <h3>INJECT NEW PROMPT TEMPLATE</h3>
-        <button class="modal-close-trigger" id="close-modal-btn">✕</button>
+        <h3 class="monospace">INJECT NEW PROMPT TEMPLATE</h3>
+        <button class="modal-close-trigger monospace" id="close-modal-btn">✕</button>
       </header>
       <div class="modal-content-form">
-        <div class="form-row"><label>System Template Title</label><input type="text" id="modal-prompt-title" placeholder="Context Title"></div>
-        <div class="form-row"><label>Execution Role Definition Category</label><input type="text" id="modal-prompt-cat" placeholder="System Prompt Category"></div>
-        <div class="form-row"><label>Prompting Instructions Payload</label><textarea id="modal-prompt-text" rows="5" placeholder="System payload script string..."></textarea></div>
-        <div class="modal-action-row"><button class="action-btn-pill primary" id="save-prompt-btn">✦ COMPILE PROMPT</button></div>
+        <div class="form-row"><label class="monospace">System Template Title</label><input type="text" class="monospace" id="modal-prompt-title" placeholder="Context Title"></div>
+        <div class="form-row"><label class="monospace">Execution Role Definition Category</label><input type="text" class="monospace" id="modal-prompt-cat" placeholder="System Prompt Category"></div>
+        <div class="form-row"><label class="monospace">Prompting Instructions Payload</label><textarea id="modal-prompt-text" class="monospace" rows="5" placeholder="System payload script string..."></textarea></div>
+        <div class="modal-action-row"><button class="action-btn-pill monospace primary" id="save-prompt-btn">✦ COMPILE PROMPT</button></div>
       </div>
     </div>
   </div>
