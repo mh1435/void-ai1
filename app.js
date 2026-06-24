@@ -63,6 +63,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupVoicePanel();
   setupCommandsPanel();
   requestLocationOnBoot(); // Auto-request location on page load
+});
   setupTasksPanel();
   setupFloatingAssistantPanel();
   setupLocationPanel();
@@ -571,42 +572,29 @@ function openInfoDetail(entry) {
 
   if (!data) {
     content.innerHTML = `
-      <div class="info-detail-hero-head">
-        ${tileHTML(entry.name, entry.tag, 'lg')}
-        <div>
-          <div class="sheet-title" style="padding:0;">${entry.name}</div>
-          <p class="info-detail-tag">${entry.tag}</p>
-        </div>
-      </div>
-      <p class="muted small" style="padding:0 4px 16px;">No details added yet for this one.</p>
+      <div class="sheet-title">${entry.name}</div>
+      <p class="muted small" style="padding:0 4px 16px;">${entry.tag} — no detailed write-up generated yet.</p>
     `;
   } else if (isWeapon) {
     content.innerHTML = `
-      <div class="info-detail-hero-head">
-        ${tileHTML(data.name, data.category, 'lg')}
-        <div>
-          <div class="sheet-title" style="padding:0;">${data.name}</div>
-          <p class="info-detail-tag">${data.category || ''}</p>
-        </div>
-      </div>
-      ${renderTileRow('Best for', data.best_for)}
+      <div class="sheet-title">${data.name}</div>
+      <p class="info-detail-tag">${data.category || ''}</p>
+      <p class="info-detail-summary">${data.summary || ''}</p>
+      ${renderListSection('Key effects', data.key_effects)}
+      ${renderListSection('Best for', data.best_for)}
+      ${data.tip ? `<p class="info-detail-note">${data.tip}</p>` : ''}
     `;
   } else {
     content.innerHTML = `
-      <div class="info-detail-hero-head">
-        ${tileHTML(data.name, data.role, 'lg')}
-        <div>
-          <div class="sheet-title" style="padding:0;">${data.name}</div>
-          <p class="info-detail-tag">${data.role || ''}</p>
-        </div>
-      </div>
-      ${renderTileRow('Countered by', data.counters)}
-      ${renderTileRow('Best build', data.best_build)}
-      ${data.skill_combo ? `
-        <div class="info-detail-section-label">Skill combo</div>
-        <p class="info-detail-summary">${data.skill_combo}</p>
-      ` : ''}
-      ${renderTileRow('Pairs well with', data.team_combo)}
+      <div class="sheet-title">${data.name}</div>
+      <p class="info-detail-tag">${data.role || ''}${data.difficulty ? ' · ' + data.difficulty + ' difficulty' : ''}</p>
+      <p class="info-detail-summary">${data.summary || ''}</p>
+      ${renderListSection('Strengths', data.strengths)}
+      ${renderListSection('Weaknesses', data.weaknesses)}
+      ${renderCountersSection(data.counters)}
+      ${data.countered_by_tip ? `<p class="info-detail-note">${data.countered_by_tip}</p>` : ''}
+      ${renderListSection('Suggested build', data.best_build)}
+      ${data.build_notes ? `<p class="info-detail-note">${data.build_notes}</p>` : ''}
     `;
   }
 
@@ -614,40 +602,23 @@ function openInfoDetail(entry) {
   document.getElementById('info-detail-sheet').classList.add('open');
 }
 
-// Deterministic color from a name, used for icon tile gradients
-function colorFromName(name) {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  const hue = Math.abs(hash) % 360;
-  return hue;
-}
-
-function tileHTML(name, tag, size = 'sm') {
-  const hue = colorFromName(name);
-  const initials = name.slice(0, 2).toUpperCase();
-  const sizeClass = size === 'lg' ? 'tile-lg' : size === 'card' ? 'tile-card' : 'tile-sm';
-  return `
-    <div class="name-tile ${sizeClass}" style="background: linear-gradient(135deg, hsl(${hue}, 65%, 45%), hsl(${(hue + 50) % 360}, 60%, 35%));">
-      <span>${initials}</span>
-    </div>
-  `;
-}
-
-function renderTileRow(label, items) {
+function renderListSection(label, items) {
   if (!items || !items.length) return '';
   return `
     <div class="info-detail-section-label">${label}</div>
-    <div class="tile-row">
-      ${items.map(item => {
-        const name = typeof item === 'string' ? item : item.name;
-        return `
-          <div class="tile-row-item">
-            ${tileHTML(name, '', 'sm')}
-            <span class="tile-row-label">${name}</span>
-          </div>
-        `;
-      }).join('')}
-    </div>
+    <ul class="info-detail-list">
+      ${items.map(i => `<li>${i}</li>`).join('')}
+    </ul>
+  `;
+}
+
+function renderCountersSection(counters) {
+  if (!counters || !counters.length) return '';
+  return `
+    <div class="info-detail-section-label">Countered by</div>
+    <ul class="info-detail-list">
+      ${counters.map(c => `<li><strong>${c.hero}</strong> — ${c.why}</li>`).join('')}
+    </ul>
   `;
 }
 
@@ -696,7 +667,7 @@ function renderInfoGrid() {
 
   grid.innerHTML = entries.map(entry => `
     <div class="info-card">
-      ${tileHTML(entry.name, entry.tag, 'card')}
+      <div class="info-card-thumb">${entry.name.slice(0, 2).toUpperCase()}</div>
       <div class="info-card-name">${entry.name}</div>
       <div class="info-card-tag">${entry.tag}</div>
     </div>
