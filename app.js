@@ -1,5 +1,6 @@
 /* =========================================================
-   VOID — CORE APPLICATION LOGIC FRAMEWORK CONTROL ENGINE
+   VOID — Core Application Logic Framework
+   Decoupled assets context strategy deployment configuration.
    ========================================================= */
 
 const App = {
@@ -17,11 +18,13 @@ const App = {
     mistralModel: 'mistral-large-latest',
     providerOrder: ['gemini', 'groq', 'together', 'mistral', 'openrouter'],
     activeProvider: 'openrouter',
-    activeModel: 'meta-llama/llama-3.2-3b-instruct:free',
     lang: 'auto',
     reducedMotion: false,
     responseMode: 'standard',
-    voiceEnabled: false,
+    voiceEnabled: true,
+    voiceRate: 1.0,
+    voicePitch: 1.0,
+    voiceName: '',
     floatingAssistantEnabled: false
   },
   stats: {
@@ -48,21 +51,20 @@ document.addEventListener('DOMContentLoaded', () => {
   loadApplicationConfig();
 });
 
-/* --- Sync Header Title Target --- */
+/* --- Update Header Name --- */
 function adjustTopHeaderTitle() {
-  const topHeader = document.getElementById('workspace-title');
+  const topHeader = document.querySelector('.header-title, h1, #workspace-title');
   if (topHeader) {
     topHeader.textContent = "GAME HUB";
   }
 }
 
-/* --- Navigation & Panel Orchestrator Routing --- */
+/* --- Controller Navigation Core --- */
 function initNavigation() {
   document.querySelectorAll('.tab-pill').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.tab-pill').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('#workspace-canvas-floor > .view-tab').forEach(t => t.classList.remove('active'));
-      
+      document.querySelectorAll('.view-tab').forEach(t => t.classList.remove('active'));
       btn.classList.add('active');
       const target = btn.getAttribute('data-target');
       const tNode = document.getElementById(target);
@@ -72,25 +74,49 @@ function initNavigation() {
 
   const openSettings = document.getElementById('open-settings-btn');
   const closeSettings = document.getElementById('close-settings-btn');
-  const vMain = document.getElementById('workspace-container');
+  const vMain = document.getElementById('view-main');
   const vSet = document.getElementById('view-settings');
 
   if (openSettings && closeSettings && vMain && vSet) {
     openSettings.addEventListener('click', () => {
+      vMain.classList.remove('active');
       vSet.classList.add('active');
     });
     closeSettings.addEventListener('click', () => {
       vSet.classList.remove('active');
+      vMain.classList.add('active');
+      document.querySelectorAll('.settings-panel').forEach(p => p.classList.remove('active'));
+      panelHistory.length = 0;
     });
   }
 }
 
-/* --- Parameter System Preferences Actions --- */
+/* --- Settings Sub Panels Management --- */
 function initSettingsLayout() {
+  document.querySelectorAll('[data-open-panel]').forEach(item => {
+    item.addEventListener('click', () => {
+      const targetId = item.getAttribute('data-open-panel');
+      const panel = document.getElementById(targetId);
+      if (panel) {
+        panel.classList.add('active');
+        panelHistory.push(panel);
+      }
+    });
+  });
+
+  document.querySelectorAll('[data-close-panel]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const panel = panelHistory.pop();
+      if (panel) panel.classList.remove('active');
+    });
+  });
+
   document.getElementById('save-keys-btn')?.addEventListener('click', () => {
     App.settings.geminiKey = document.getElementById('input-gemini-key')?.value || '';
     App.settings.groqKey = document.getElementById('input-groq-key')?.value || '';
     App.settings.apiKey = document.getElementById('input-api-key')?.value || '';
+    App.settings.togetherKey = document.getElementById('input-together-key')?.value || '';
+    App.settings.mistralKey = document.getElementById('input-mistral-key')?.value || '';
     persistSettingsToServer();
   });
 
@@ -98,12 +124,25 @@ function initSettingsLayout() {
     App.settings.geminiModel = document.getElementById('input-gemini-model')?.value || 'gemini-2.5-flash';
     App.settings.groqModel = document.getElementById('input-groq-model')?.value || 'llama-3.3-70b-versatile';
     App.settings.model = document.getElementById('input-model')?.value || 'meta-llama/llama-3.2-3b-instruct:free';
+    App.settings.togetherModel = document.getElementById('input-together-model')?.value || 'meta-llama/Llama-3.2-70B-Instruct-Turbo';
+    App.settings.mistralModel = document.getElementById('input-mistral-model')?.value || 'mistral-large-latest';
     persistSettingsToServer();
     updateModelQuickSelectUI();
   });
+
+  document.querySelectorAll('.theme-swatch').forEach(swatch => {
+    swatch.addEventListener('click', () => {
+      document.querySelectorAll('.theme-swatch').forEach(s => s.classList.remove('active'));
+      swatch.classList.add('active');
+      const variant = swatch.getAttribute('data-theme');
+      App.settings.theme = variant;
+      document.body.setAttribute('data-theme-variant', variant);
+      persistSettingsToServer();
+    });
+  });
 }
 
-/* --- Chat Engine with Fixed Multi-Provider Switcher --- */
+/* --- Inference Chat & Quick Switcher Engine --- */
 function initChatEngine() {
   const chatInput = document.getElementById('chat-input');
   const sendBtn = document.getElementById('send-msg-btn');
@@ -167,6 +206,7 @@ function updateModelQuickSelectUI() {
       const chosenProvider = pill.getAttribute('data-provider');
       App.settings.activeProvider = chosenProvider;
       
+      // Update running standard model references based on selected service provider context
       if (chosenProvider === 'openrouter') App.settings.activeModel = App.settings.model;
       if (chosenProvider === 'groq') App.settings.activeModel = App.settings.groqModel;
       if (chosenProvider === 'gemini') App.settings.activeModel = App.settings.geminiModel;
@@ -209,7 +249,7 @@ function parseMarkdownText(raw) {
 function dispatchPromptToBackend(prompt) {
   const placeholder = document.createElement('div');
   placeholder.className = 'chat-bubble assistant';
-  placeholder.innerHTML = `<div class="bubble-meta">VOID::CORE // INTERFACES</div><div class="bubble-body muted monospace">Computing network loop via active node profile context...</div>`;
+  placeholder.innerHTML = `<div class="bubble-meta">VOID::CORE // COMPUTING...</div><div class="bubble-body muted monospace">Executing pipeline loop via model node target...</div>`;
   
   const box = document.getElementById('messages-box');
   box.appendChild(placeholder);
@@ -231,11 +271,11 @@ function dispatchPromptToBackend(prompt) {
   })
   .catch(() => {
     placeholder.remove();
-    appendBubbleMessage('assistant', '!! ERR_CONNECTION: Offline response array logic pipeline required.');
+    appendBubbleMessage('assistant', '!! NETWORK_TIMEOUT: Core context connection dropped.');
   });
 }
 
-/* --- Draggable System Widgets Deck --- */
+/* --- Workspace Monitor Widgets Layout --- */
 function initWorkspaceGrid() {
   document.querySelectorAll('[data-add-widget]').forEach(btn => {
     btn.addEventListener('click', () => { spawnWorkspaceWidget(btn.getAttribute('data-add-widget')); });
@@ -250,14 +290,14 @@ function spawnWorkspaceWidget(type) {
   const card = document.createElement('div');
   card.className = 'dashboard-widget';
   card.id = `widget-${type}`;
-  let title = 'MONITOR', bodyHTML = '';
+  let title = 'MODULE', bodyHTML = '', w = 240, h = 160;
 
   if (type === 'sys-stats') {
-    title = 'SYSTEM LOG CORE';
+    title = 'SYSTEM MONITORS';
     bodyHTML = `
-      <div class="sys-metric-row monospace">
-        <div class="sys-meta"><span>PROCESS ENGINE CPU</span><span class="val">24%</span></div>
-        <div class="sys-progress-bar"><div class="sys-progress-fill" style="width: 24%"></div></div>
+      <div class="sys-metric-row">
+        <div class="sys-meta"><span>CPU EXECUTION</span><span class="val">18%</span></div>
+        <div class="sys-progress-bar"><div class="sys-progress-fill" style="width: 18%"></div></div>
       </div>
     `;
   }
@@ -265,8 +305,9 @@ function spawnWorkspaceWidget(type) {
     <div class="widget-head"><span>${title}</span><button class="widget-close" data-remove="${type}">×</button></div>
     <div class="widget-body">${bodyHTML}</div>
   `;
+  card.style.width = w + 'px'; card.style.height = h + 'px';
   board.appendChild(card);
-  placeWidgetElement(card, type, 20, 20);
+  placeWidgetElement(card, type, 40, 40);
   bindDragLogic(card, type);
   card.querySelector('[data-remove]').addEventListener('click', () => {
     card.remove(); delete widgetPositions[type]; updateCanvasEmptyState();
@@ -300,8 +341,30 @@ function updateCanvasEmptyState() {
   if (msg) msg.style.display = Object.keys(widgetPositions).length === 0 ? 'block' : 'none';
 }
 
-/* --- GameHub Repository Rendering with Meta Badge Logic --- */
+/* --- GameHub Layout Elements Target Renderer --- */
 function initGameHubLayout() {
+  const canvasWrap = document.querySelector('.canvas-container');
+  if (!canvasWrap) return;
+
+  let hubContainer = document.querySelector('.gamehub-container');
+  if (!hubContainer) {
+    hubContainer = document.createElement('div');
+    hubContainer.className = 'gamehub-container';
+    hubContainer.innerHTML = `
+      <div class="gamehub-tabs">
+        <button class="gamehub-tab-btn active" data-hub-tab="heroes">HERO REPOSITORY</button>
+        <button class="gamehub-tab-btn" data-hub-tab="items">EQUIPMENT CORE</button>
+      </div>
+      <div class="gamehub-content-view active" id="hub-view-heroes">
+        <div class="hub-grid" id="heroes-grid-target"></div>
+      </div>
+      <div class="gamehub-content-view" id="hub-view-items">
+        <div class="hub-grid" id="items-grid-target"></div>
+      </div>
+    `;
+    canvasWrap.appendChild(hubContainer);
+  }
+
   document.querySelectorAll('.gamehub-tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.gamehub-tab-btn').forEach(b => b.classList.remove('active'));
@@ -322,33 +385,25 @@ function renderGameHubGridElements() {
   const iGrid = document.getElementById('items-grid-target');
 
   if (hGrid && GameHubData.heroes) {
-    hGrid.innerHTML = GameHubData.heroes.map(hero => {
-      // Look for custom META labels and slide them into separate structural wrapper formatting layers
-      let processedBadgeText = hero.rarity;
-      if (hero.rarity.includes('(META)')) {
-        processedBadgeText = hero.rarity.replace('(META)', '<span class="meta-fade">(META)</span>');
-      }
-
-      return `
-        <div class="hub-card" data-tier="${hero.rarity}" onclick="openGameHubDetailItem('heroes', '${hero.id}')">
-          <div class="hub-card-media">
-            <img class="hub-card-img" src="${hero.img}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' style=\'fill:%23111\'><rect width=\'100\' height=\'100\'/><text x=\'50%\' y=\'50%\' dominant-baseline=\'middle\' text-anchor=\'middle\' fill=\'%23555\' font-family=\'monospace\' font-size=\'11\'>${hero.name}</text></svg>'">
-            <span class="hub-card-badge">${processedBadgeText}</span>
-          </div>
-          <div class="hub-card-overlay">
-            <div class="hub-card-title">${hero.name}</div>
-            <div class="hub-card-sub">${hero.role}</div>
-          </div>
+    hGrid.innerHTML = GameHubData.heroes.map(hero => `
+      <div class="hub-card" onclick="openGameHubDetailItem('heroes', '${hero.id}')">
+        <div class="hub-card-media">
+          <img class="hub-card-img" src="${hero.img}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' style=\'fill:%23111\'><rect width=\'100\' height=\'100\'/><text x=\'50%\' y=\'50%\' dominant-baseline=\'middle\' text-anchor=\'middle\' fill=\'%23444\' font-family=\'monospace\' font-size=\'10\'>${hero.name}</text></svg>'">
+          <span class="hub-card-badge">${hero.rarity}</span>
         </div>
-      `;
-    }).join('');
+        <div class="hub-card-overlay">
+          <div class="hub-card-title">${hero.name}</div>
+          <div class="hub-card-sub">${hero.role}</div>
+        </div>
+      </div>
+    `).join('');
   }
 
   if (iGrid && GameHubData.items) {
     iGrid.innerHTML = GameHubData.items.map(item => `
-      <div class="hub-card" data-tier="${item.tier}" onclick="openGameHubDetailItem('items', '${item.id}')">
+      <div class="hub-card" onclick="openGameHubDetailItem('items', '${item.id}')">
         <div class="hub-card-media">
-          <img class="hub-card-img" src="${item.img}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' style=\'fill:%23111\'><rect width=\'100\' height=\'100\'/><text x=\'50%\' y=\'50%\' dominant-baseline=\'middle\' text-anchor=\'middle\' fill=\'%23555\' font-family=\'monospace\' font-size=\'10\'>${item.name}</text></svg>'">
+          <img class="hub-card-img" src="${item.img}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' style=\'fill:%23111\'><rect width=\'100\' height=\'100\'/><text x=\'50%\' y=\'50%\' dominant-baseline=\'middle\' text-anchor=\'middle\' fill=\'%23444\' font-family=\'monospace\' font-size=\'9\'>${item.name}</text></svg>'">
           <span class="hub-card-badge">${item.tier}</span>
         </div>
         <div class="hub-card-overlay">
@@ -363,10 +418,10 @@ function renderGameHubGridElements() {
 function openGameHubDetailItem(collection, id) {
   const dataset = GameHubData[collection].find(x => x.id === id);
   if (!dataset) return;
-  appendBubbleMessage('assistant', `**[${dataset.name}]** Profile Asset Decoupled Readout:\nType Role Parameters: \`${dataset.role || dataset.type}\` — Active Registry Metadata Log Complete.`);
+  appendBubbleMessage('assistant', `**[${dataset.name}]** Profile Entry Loaded:\n${dataset.desc}\nSystem Resource Asset Target Route: \`${dataset.img}\``);
 }
 
-/* --- Storage Sync Framework Handlers --- */
+/* --- Storage Backend Server Handlers --- */
 function loadApplicationConfig() {
   fetch('/api/settings')
     .then(r => r.json())
@@ -388,5 +443,5 @@ function persistSettingsToServer() {
 
 function updateStatusDashboardLines() {
   const line = document.getElementById('welcome-stats-line');
-  if (line) line.innerText = `INT::${App.stats.totalInteractions} | MSG::${App.stats.messages}`;
+  if (line) line.innerText = `INT::${App.stats.totalInteractions} | MSG::${App.settings.messages}`;
 }
