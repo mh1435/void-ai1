@@ -196,21 +196,9 @@ function applyTheme(name) {
   App.settings.theme = name;
   const root = document.documentElement;
   root.setAttribute('data-theme', name === 'frost' ? '' : name);
-
-  // Theme color values for button/UI tinting
-  const themeColors = {
-    'frost': { hue: 200, sat: 70, light: 50 }, // cyan
-    'ember': { hue: 0, sat: 70, light: 50 },    // red
-    'sage': { hue: 120, sat: 50, light: 45 },   // green
-    'violet': { hue: 270, sat: 60, light: 50 }, // purple
-    'gold': { hue: 40, sat: 80, light: 50 }     // orange/gold
-  };
-
-  const color = themeColors[name] || themeColors.frost;
-  root.style.setProperty('--theme-hue', color.hue);
-  root.style.setProperty('--theme-sat', color.sat + '%');
-  root.style.setProperty('--theme-light', color.light + '%');
-
+  // --theme-hue/sat/light and --accent are now derived purely from CSS
+  // via the [data-theme] selectors, so they always stay in sync with
+  // the actual accent color shown elsewhere in the UI.
   document.querySelectorAll('.theme-dot').forEach(d => {
     d.classList.toggle('active', d.dataset.theme === name);
   });
@@ -500,28 +488,6 @@ const GAMES_DB = {
       { name: 'Mines of Glory', tag: 'Brawl' },
     ],
   },
-  freefire: {
-    name: 'Free Fire',
-    short: 'FF',
-    characters: [
-      { name: 'Alok', tag: 'Support' },
-      { name: 'Chrono', tag: 'Defense' },
-      { name: 'K', tag: 'Hybrid' },
-      { name: 'Kelly', tag: 'Speed' },
-      { name: 'Wukong', tag: 'Stealth' },
-    ],
-    weapons: [
-      { name: 'M1014', tag: 'Shotgun' },
-      { name: 'AWM', tag: 'Sniper' },
-      { name: 'Groza', tag: 'Assault Rifle' },
-      { name: 'MP40', tag: 'SMG' },
-    ],
-    maps: [
-      { name: 'Bermuda', tag: 'Battle Royale' },
-      { name: 'Purgatory', tag: 'Battle Royale' },
-      { name: 'Kalahari', tag: 'Clash Squad' },
-    ],
-  },
 };
 
 const HubState = {
@@ -562,6 +528,7 @@ function closeInfoDetailSheet() {
 
 function setupInfoDetailSheet() {
   document.getElementById('info-detail-overlay').addEventListener('click', closeInfoDetailSheet);
+  document.getElementById('info-detail-close').addEventListener('click', closeInfoDetailSheet);
 }
 
 function openInfoDetail(entry) {
@@ -572,7 +539,7 @@ function openInfoDetail(entry) {
   if (!data) {
     content.innerHTML = `
       <div class="info-detail-hero-head">
-        ${tileHTML(entry.name, entry.tag, 'lg')}
+        ${tileHTML(entry.name, entry.tag, 'lg', isWeapon ? 'item' : 'hero')}
         <div>
           <div class="sheet-title" style="padding:0;">${entry.name}</div>
           <p class="info-detail-tag">${entry.tag}</p>
@@ -583,7 +550,7 @@ function openInfoDetail(entry) {
   } else if (isWeapon) {
     content.innerHTML = `
       <div class="info-detail-hero-head">
-        ${tileHTML(data.name, data.category, 'lg')}
+        ${tileHTML(data.name, data.category, 'lg', 'item')}
         <div>
           <div class="sheet-title" style="padding:0;">${data.name}</div>
           <p class="info-detail-tag">${data.category || ''}</p>
@@ -594,14 +561,14 @@ function openInfoDetail(entry) {
   } else {
     content.innerHTML = `
       <div class="info-detail-hero-head">
-        ${tileHTML(data.name, data.role, 'lg')}
+        ${tileHTML(data.name, data.role, 'lg', 'hero')}
         <div>
           <div class="sheet-title" style="padding:0;">${data.name}</div>
           <p class="info-detail-tag">${data.role || ''}</p>
         </div>
       </div>
       ${renderTileRow('Countered by', data.counters)}
-      ${renderTileRow('Best build', data.best_build)}
+      ${renderTileRow('Best build', data.best_build, 'item')}
       ${data.skill_combo ? `
         <div class="info-detail-section-label">Skill combo</div>
         <p class="info-detail-summary">${data.skill_combo}</p>
@@ -622,18 +589,47 @@ function colorFromName(name) {
   return hue;
 }
 
-function tileHTML(name, tag, size = 'sm') {
+// Simple role glyphs (generic shapes, not game-specific art) to make
+// tiles feel more like a real game UI without using any copyrighted icons.
+const ROLE_ICONS = {
+  'Assassin': '<path d="M5 19L19 5M19 5h-5M19 5v5"/>',
+  'Marksman': '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>',
+  'Mage': '<path d="M12 2l2 5 5 2-5 2-2 5-2-5-5-2 5-2z"/>',
+  'Tank': '<path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z"/>',
+  'Fighter': '<path d="M14.5 17.5L3 6V3h3l11.5 11.5M13 19l3-3M16 16l4 4M19 13l2-2"/>',
+  'Support': '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 1 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>',
+};
+
+function roleIconSVG(tag) {
+  if (!tag) return '';
+  const roleKey = Object.keys(ROLE_ICONS).find(r => tag.includes(r));
+  if (!roleKey) return '';
+  return `<svg class="name-tile-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${ROLE_ICONS[roleKey]}</svg>`;
+}
+
+function tileHTML(name, tag, size = 'sm', type = 'hero') {
   const hue = colorFromName(name);
   const initials = name.slice(0, 2).toUpperCase();
   const sizeClass = size === 'lg' ? 'tile-lg' : size === 'card' ? 'tile-card' : 'tile-sm';
+  const icon = size === 'card' || size === 'lg' ? roleIconSVG(tag) : '';
+  const slug = name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  const folder = type === 'item' ? 'items' : 'heroes';
+  const imgPath = `images/${folder}/${slug}.png`;
+
+  // Tries to load a real picture from images/heroes/ or images/items/ first.
+  // If that file doesn't exist (404), onerror hides the broken image and
+  // reveals the colored initials tile underneath instead — so a missing
+  // picture never shows a broken-image icon, it just falls back cleanly.
   return `
     <div class="name-tile ${sizeClass}" style="background: linear-gradient(135deg, hsl(${hue}, 65%, 45%), hsl(${(hue + 50) % 360}, 60%, 35%));">
+      <img src="${imgPath}" alt="${name}" class="name-tile-img" onerror="this.style.display='none';">
+      ${icon}
       <span>${initials}</span>
     </div>
   `;
 }
 
-function renderTileRow(label, items) {
+function renderTileRow(label, items, type = 'hero') {
   if (!items || !items.length) return '';
   return `
     <div class="info-detail-section-label">${label}</div>
@@ -642,7 +638,7 @@ function renderTileRow(label, items) {
         const name = typeof item === 'string' ? item : item.name;
         return `
           <div class="tile-row-item">
-            ${tileHTML(name, '', 'sm')}
+            ${tileHTML(name, '', 'sm', type)}
             <span class="tile-row-label">${name}</span>
           </div>
         `;
@@ -694,9 +690,10 @@ function renderInfoGrid() {
     return;
   }
 
+  const tileType = HubState.activeTab === 'weapons' ? 'item' : 'hero';
   grid.innerHTML = entries.map(entry => `
     <div class="info-card">
-      ${tileHTML(entry.name, entry.tag, 'card')}
+      ${tileHTML(entry.name, entry.tag, 'card', tileType)}
       <div class="info-card-name">${entry.name}</div>
       <div class="info-card-tag">${entry.tag}</div>
     </div>
