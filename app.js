@@ -517,7 +517,6 @@ function setupGameHub() {
   HubState.activeGame = Object.keys(GAMES_DB)[0];
   loadHubDetails().then(renderInfoGrid);
   renderInfoGrid();
-  setupSkyBand();
   setupInfoDetailSheet();
 }
 
@@ -715,81 +714,6 @@ function weatherCodeToVisualState(code, isDay) {
   if ([71, 73, 75, 77, 85, 86].includes(code)) return 'snow';
   if ([95, 96, 99].includes(code)) return 'storm';
   return isDay ? 'clear-day' : 'clear-night';
-}
-
-function setupSkyBand() {
-  document.getElementById('sky-refresh').addEventListener('click', () => {
-    if (App.location) {
-      loadSkyWeather(App.location.lat, App.location.lon);
-    } else {
-      requestSkyLocation();
-    }
-  });
-
-  if (App.location) {
-    document.getElementById('sky-place').textContent = App.location.label;
-    loadSkyWeather(App.location.lat, App.location.lon);
-  } else {
-    requestSkyLocation();
-  }
-}
-
-function requestSkyLocation() {
-  const placeEl = document.getElementById('sky-place');
-  if (!navigator.geolocation) {
-    placeEl.textContent = 'Location not supported';
-    return;
-  }
-
-  placeEl.textContent = 'Locating you…';
-
-  navigator.geolocation.getCurrentPosition(
-    async (pos) => {
-      const lat = pos.coords.latitude;
-      const lon = pos.coords.longitude;
-      let label = `${lat.toFixed(2)}, ${lon.toFixed(2)}`;
-
-      try {
-        const res = await fetch(`/api/reverse-geocode?lat=${lat}&lon=${lon}`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data.label) label = data.label;
-        }
-      } catch (e) { /* keep coordinate fallback */ }
-
-      App.location = { lat, lon, label };
-      placeEl.textContent = label;
-      loadSkyWeather(lat, lon);
-      addMapWidgetIfMissing();
-      refreshDashboard();
-    },
-    () => {
-      placeEl.textContent = 'Location unavailable';
-    },
-    { enableHighAccuracy: true, timeout: 10000 }
-  );
-}
-
-async function loadSkyWeather(lat, lon) {
-  const band = document.getElementById('sky-band');
-  try {
-    const res = await fetch(`/api/weather?lat=${lat}&lon=${lon}`);
-    if (!res.ok) throw new Error('weather fetch failed');
-    const w = await res.json();
-
-    const state = weatherCodeToVisualState(w.weather_code, w.is_day);
-    band.dataset.state = state;
-
-    document.getElementById('sky-temp').textContent = `${Math.round(w.temp)}°`;
-    document.getElementById('sky-desc').textContent = w.description || '—';
-    document.getElementById('sky-feels').textContent = `Feels like ${Math.round(w.feels_like)}°`;
-    if (w.temp_max !== undefined && w.temp_min !== undefined) {
-      document.getElementById('sky-range').textContent = `H: ${Math.round(w.temp_max)}°  L: ${Math.round(w.temp_min)}°`;
-    }
-  } catch (e) {
-    band.dataset.state = 'clouds';
-    document.getElementById('sky-desc').textContent = 'Weather unavailable';
-  }
 }
 
 function setupDashboard() {}
