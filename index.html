@@ -8,8 +8,10 @@
 </head>
 <body data-theme-variant="frost">
 
+  <!-- Core Main Grid Container Frame -->
   <div id="workspace-container">
     
+    <!-- Left Hand Control Pipeline Navigation -->
     <aside id="sidebar-panel">
       <div class="sidebar-identity">
         <div class="void-glitch-logo">VOID</div>
@@ -36,6 +38,7 @@
       </div>
     </aside>
 
+    <!-- Center Display Dashboard Canvas -->
     <main id="view-main" class="view-tab active">
       <header id="top-bar">
         <h1 id="workspace-title">GAME HUB</h1>
@@ -46,6 +49,7 @@
 
       <div id="workspace-canvas-floor">
         
+        <!-- Tab 1: AI Assistant Interface & Script Workspace -->
         <div id="panel-terminal" class="view-tab active">
           <div class="terminal-layout-split">
             
@@ -57,6 +61,7 @@
                 </div>
               </div>
               
+              <!-- Refactored Input Frame — Removed Reset & Voice elements -->
               <div class="chat-input-container">
                 <textarea id="chat-input" placeholder="Query assistant node... (Press Enter to execute)"></textarea>
                 <div class="input-actions-bar">
@@ -65,6 +70,7 @@
               </div>
             </div>
 
+            <!-- Draggable Widget Canvas Deck Area -->
             <div class="widget-deck-canvas" id="widget-board">
               <div id="canvas-empty-msg" class="monospace text-dim">No runtime monitor layouts attached to active dashboard pipeline layer.</div>
             </div>
@@ -72,6 +78,7 @@
           </div>
         </div>
 
+        <!-- Tab 2: Decoupled GameHub Content Panel Layout -->
         <div id="panel-gamehub" class="view-tab">
           <div class="gamehub-container">
             <div class="gamehub-tabs">
@@ -90,6 +97,7 @@
       </div>
     </main>
 
+    <!-- Side View Panel: Options Overlays -->
     <div id="view-settings" class="view-tab">
       <header class="panel-sub-header">
         <h2>CORE APP CONFIGURATION</h2>
@@ -115,6 +123,7 @@
 
   </div>
 
+  <!-- Component System Injections -->
   <script src="gamehub-data.js"></script>
   <script src="app.js"></script>
 </body>
