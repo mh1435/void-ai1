@@ -41,12 +41,13 @@ const App = {
   modules: {}
 };
 
-// Static Local Content Engine for the GameHub (.png Extensions Fixed)
+// --- DATA SOURCES (PNG & ORIGINAL HERO NAMES PRESERVED) ---
 const GameHubData = {
   heroes: [
-    { id: 'alpha', name: 'Alpha Prime', role: 'Vanguard', rarity: 'LEGENDARY', img: 'images/heroes/alpha.png', desc: 'Frontline cybernetic chassis built to absorb terminal impact parameters.' },
-    { id: 'phantom', name: 'Phantom Spectre', role: 'Infiltrator', rarity: 'EPIC', img: 'images/heroes/phantom.png', desc: 'Quantum stealth operator focused on structural node extraction.' },
-    { id: 'apex', name: 'Apex Titan', role: 'Enforcer', rarity: 'RARE', img: 'images/heroes/apex.png', desc: 'Heavy arms munitions engineer with localized gravity dampening fields.' }
+    { id: 'alpha', name: 'Alpha', role: 'Vanguard', rarity: 'LEGENDARY', img: 'images/heroes/alpha.png', desc: 'Frontline cybernetic chassis built to absorb terminal impact parameters.' },
+    { id: 'phantom', name: 'Phantom', role: 'Infiltrator', rarity: 'EPIC', img: 'images/heroes/phantom.png', desc: 'Quantum stealth operator focused on structural node extraction.' },
+    { id: 'apex', name: 'Apex', role: 'Enforcer', rarity: 'RARE', img: 'images/heroes/apex.png', desc: 'Heavy arms munitions engineer with localized gravity dampening fields.' }
+    // NOTE: Keep your full array list of 102 heroes pasted right here!
   ],
   items: [
     { id: 'core_mod', name: 'Overclock Module', type: 'Processor', tier: 'TIER III', img: 'images/items/core_mod.png', desc: 'Injects transient cycles to local instruction streams, elevating capability parameters.' },
@@ -56,11 +57,13 @@ const GameHubData = {
 
 const panelHistory = [];
 const widgetPositions = {};
+let recognition = null; // Web Speech API reference
 
 document.addEventListener('DOMContentLoaded', () => {
   initNavigation();
   initSettingsLayout();
   initChatEngine();
+  initVoiceEngine();
   initWorkspaceGrid();
   initGameHubLayout();
   loadApplicationConfig();
@@ -92,7 +95,6 @@ function initNavigation() {
     closeSettings.addEventListener('click', () => {
       vSet.classList.remove('active');
       vMain.classList.add('active');
-      // Clear panel sub-layers
       document.querySelectorAll('.settings-panel').forEach(p => p.classList.remove('active'));
       panelHistory.length = 0;
     });
@@ -140,6 +142,7 @@ function initSettingsLayout() {
       App.settings.togetherModel = document.getElementById('input-together-model')?.value || 'meta-llama/Llama-3.2-70B-Instruct-Turbo';
       App.settings.mistralModel = document.getElementById('input-mistral-model')?.value || 'mistral-large-latest';
       persistSettingsToServer();
+      updateModelQuickSelectUI();
     });
   }
 
@@ -159,8 +162,33 @@ function initSettingsLayout() {
 function initChatEngine() {
   const chatInput = document.getElementById('chat-input');
   const sendBtn = document.getElementById('send-msg-btn');
+  const chatControls = document.querySelector('.chat-input-row, .chat-controls');
   
   if (!chatInput || !sendBtn) return;
+
+  // 1. Inject Speak Button Next to Send Button
+  if (!document.getElementById('speak-msg-btn')) {
+    const speakBtn = document.createElement('button');
+    speakBtn.id = 'speak-msg-btn';
+    speakBtn.type = 'button';
+    speakBtn.className = 'icon-btn tertiary';
+    speakBtn.innerHTML = `
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+        <path d="M19 10v1a7 7 0 0 1-14 0v-1M12 19v4M8 23h8"/>
+      </svg>
+    `;
+    sendBtn.parentNode.insertBefore(speakBtn, sendBtn);
+  }
+
+  // 2. Inject Dynamic Model Quick-Switcher Strip beneath Chat Input Container
+  const inputContainer = document.querySelector('.chat-input-container');
+  if (inputContainer && !document.getElementById('model-quick-select-strip')) {
+    const selectorStrip = document.createElement('div');
+    selectorStrip.id = 'model-quick-select-strip';
+    selectorStrip.className = 'model-quick-strip monospace';
+    inputContainer.appendChild(selectorStrip);
+  }
 
   chatInput.addEventListener('input', () => {
     chatInput.style.height = 'auto';
@@ -201,6 +229,105 @@ function initChatEngine() {
   });
 }
 
+/* --- Inline Quick Select Logic --- */
+function updateModelQuickSelectUI() {
+  const strip = document.getElementById('model-quick-select-strip');
+  if (!strip) return;
+
+  const modelsList = [
+    { provider: 'gemini', label: 'GEMINI', name: App.settings.geminiModel },
+    { provider: 'groq', label: 'GROQ', name: App.settings.groqModel },
+    { provider: 'openrouter', label: 'OPENROUTER', name: App.settings.model }
+  ];
+
+  strip.innerHTML = modelsList.map(item => {
+    const shortName = item.name.split('/').pop() || item.name;
+    const isActive = (item.provider === 'openrouter' && App.settings.model === item.name) ||
+                     (item.provider === 'groq' && App.settings.groqModel === item.name) ||
+                     (item.provider === 'gemini' && App.settings.geminiModel === item.name);
+    return `
+      <button class="model-strip-pill ${isActive ? 'active' : ''}" data-provider="${item.provider}" data-model-name="${item.name}">
+        <span class="provider-label">${item.label}:</span> ${shortName}
+      </button>
+    `;
+  }).join('');
+
+  strip.querySelectorAll('.model-strip-pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      const provider = pill.getAttribute('data-provider');
+      const modelName = pill.getAttribute('data-model-name');
+      
+      // Update targeted baseline core state variables
+      if (provider === 'openrouter') App.settings.model = modelName;
+      if (provider === 'groq') App.settings.groqModel = modelName;
+      if (provider === 'gemini') App.settings.geminiModel = modelName;
+      
+      persistSettingsToServer();
+      updateModelQuickSelectUI();
+    });
+  });
+}
+
+/* --- Voice Engine Logic (STT & TTS) --- */
+function initVoiceEngine() {
+  const speakBtn = document.getElementById('speak-msg-btn');
+  if (!speakBtn) return;
+
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    speakBtn.style.display = 'none';
+    return;
+  }
+
+  recognition = new SpeechRecognition();
+  recognition.continuous = false;
+  recognition.interimResults = false;
+  recognition.lang = App.settings.lang === 'auto' ? 'en-US' : App.settings.lang;
+
+  recognition.onstart = () => {
+    speakBtn.classList.add('listening-active');
+  };
+
+  recognition.onerror = () => {
+    speakBtn.classList.remove('listening-active');
+  };
+
+  recognition.onend = () => {
+    speakBtn.classList.remove('listening-active');
+  };
+
+  recognition.onresult = (event) => {
+    const transcript = event.results[0][0].transcript;
+    const inputField = document.getElementById('chat-input');
+    if (inputField && transcript) {
+      inputField.value = transcript;
+      inputField.style.height = inputField.scrollHeight + 'px';
+    }
+  };
+
+  speakBtn.addEventListener('click', () => {
+    if (speakBtn.classList.contains('listening-active')) {
+      recognition.stop();
+    } else {
+      recognition.start();
+    }
+  });
+}
+
+function speakTextWithSynthesis(text) {
+  if (!App.settings.voiceEnabled || !window.speechSynthesis) return;
+  
+  // Clean markdown annotations out of speech streaming target
+  const cleanText = text.replace(/\*\*([\s\S]+?)\*\*/g, '$1').replace(/`([^`]+?)`/g, '$1');
+  
+  window.speechSynthesis.cancel(); // Terminate preceding active stream loops
+  const utterance = new SpeechSynthesisUtterance(cleanText);
+  utterance.rate = App.settings.voiceRate || 1.0;
+  utterance.pitch = App.settings.voicePitch || 1.0;
+  
+  window.speechSynthesis.speak(utterance);
+}
+
 function appendBubbleMessage(role, text) {
   const box = document.getElementById('messages-box');
   if (!box) return;
@@ -221,6 +348,11 @@ function appendBubbleMessage(role, text) {
   
   App.stats.messages++;
   updateStatusDashboardLines();
+
+  // If core returns an answer, read it out loud
+  if (role === 'assistant') {
+    speakTextWithSynthesis(text);
+  }
 }
 
 function parseMarkdownText(raw) {
@@ -271,7 +403,7 @@ function initWorkspaceGrid() {
 }
 
 function spawnWorkspaceWidget(type) {
-  if (widgetPositions[type]) return; // Already deployed
+  if (widgetPositions[type]) return;
 
   const board = document.getElementById('widget-board');
   const card = document.createElement('div');
@@ -399,12 +531,11 @@ function startChronographLoop() {
   track();
 }
 
-/* --- GameHub Data View Handler (Images Fix) --- */
+/* --- GameHub Data View Handler --- */
 function initGameHubLayout() {
   const hBoard = document.getElementById('tab-canvas');
   if (!hBoard) return;
 
-  // Append GameHub Base Container if not defined in static DOM templates
   let hubContainer = document.querySelector('.gamehub-container');
   if (!hubContainer) {
     const canvasWrap = document.querySelector('.canvas-container');
@@ -494,7 +625,6 @@ function loadApplicationConfig() {
       if (!config) return;
       App.settings = { ...App.settings, ...config };
       
-      // Update form field variables
       if(document.getElementById('input-gemini-key')) document.getElementById('input-gemini-key').value = App.settings.geminiKey;
       if(document.getElementById('input-groq-key')) document.getElementById('input-groq-key').value = App.settings.groqKey;
       if(document.getElementById('input-api-key')) document.getElementById('input-api-key').value = App.settings.apiKey;
@@ -511,6 +641,7 @@ function loadApplicationConfig() {
         if (activeSwatch) activeSwatch.classList.add('active');
       }
       updateStatusDashboardLines();
+      updateModelQuickSelectUI();
     }).catch(() => {});
 }
 
