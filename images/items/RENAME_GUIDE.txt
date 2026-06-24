@@ -1,0 +1,53 @@
+RENAME GUIDE — items you uploaded that match real MLBB items
+================================================================
+Rename these files (remove "-png" / "-min" / typos) to match exactly:
+
+YOUR FILE                          ->  RENAME TO
+----------------------------------------------------------------
+holy-crystal-png.png               ->  holy-crystal.png
+genius-wand-png.png                ->  genius-wand.png
+blade-armor-png.png                ->  blade-armor.png
+athena-shield-png.png               ->  athena-s-shield.png
+antique-cuirass-png.png            ->  antique-cuirass.png
+windtalker-png.png                  ->  windtalker.png
+wind-of-nature-png.png              ->  wind-of-nature.png
+rose-gold-meteor-png.png            ->  rose-gold-meteor.png
+malefic-roar-png.png                ->  malefic-roar.png
+clock-of-destiny-png.png            ->  clock-of-destiny.png
+demon-hunter-sword-png.png          ->  demon-hunter-sword.png
+blade-of-despair-png.png            ->  blade-of-despair.png
+bersekers-fury-png.png              ->  berserker-s-fury.png   (note the typo fix!)
+tough-boots-png-min.png             ->  tough-boots.png
+swift-boots-png-min.png             ->  swift-boots.png
+magic-shoes-png-min.png             ->  magic-shoes.png
+arcane-boots-png-min.png            ->  arcane-boots.png
+immortality-png.png                 ->  immortality.png
+brute-force-breastplate-png.png     ->  brute-force-breastplate.png
+scarlet-phantom-png.png             ->  scarlet-phantom.png
+concentrated-energy-png.png         ->  concentrated-energy.png
+lightning-truncheon-png.png         ->  lightning-truncheon.png
+
+STILL MISSING (no uploaded file matches these yet):
+----------------------------------------------------------------
+endless-battle.png
+dominance-ice.png
+raptor-machete.png
+magic-power-sneakers.png
+mage-s-blessing.png
+
+NOT NEEDED (these don't match any real item in the app - extras from
+your upload that won't be used unless you rename them to something above):
+----------------------------------------------------------------
+ice-queen-wand, glowing-wand, divine-glaive, enhanced-talisman,
+feather-of-heaven, winter-crown, winter-truncheon, shadow-twindblades,
+necklace-of-durance, war-axe, sea-healberd, starlium-scythe,
+flask-of-the-oasis, calamity-reaper, blood-wings, sky-piercer,
+expert-gloves, malefic-gun, golden-staff, demon-shoes, rapid-boots,
+thunder-belt, radiant-armor, queen-wings, oracle, dominance-ace,
+cursed-helmet, guardian-helmet, great-dragon-spear, blade-of-heptaseas,
+hunter-strike, haas-claw, pandora's-box, warrior-boots, fleeting-time,
+corrosion-scythe, blood-axe, great-dragon-spear
+
+TIP: On your phone, long-press a file in your file manager, choose
+"Rename", and type the new name exactly (all lowercase, dashes not
+spaces, ending in .png).
