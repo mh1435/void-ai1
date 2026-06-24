@@ -1,8 +1,7 @@
 /* =========================================================
    VOID — application logic
-   No browser storage APIs (per artifact rules elsewhere too) —
-   here we DO have a real backend, so settings persist via
-   void_web.py's /api/settings instead of localStorage.
+   No browser storage APIs — keys and configurations persist via
+   backend api instead. Handles local asset queries for GameHub.
    ========================================================= */
 
 const App = {
@@ -39,1679 +38,495 @@ const App = {
     replies: 0
   },
   location: null, // { lat, lon, label }
-  modelCatalog: [],
-  tasks: [],
-  commands: [],
-  canvasView: { x: 0, y: 0, scale: 1, panMode: false }
+  modules: {}
 };
 
-/* ============ Boot ============ */
+// Static Local Content Engine for the GameHub
+const GameHubData = {
+  heroes: [
+    { id: 'alpha', name: 'Alpha Prime', role: 'Vanguard', rarity: 'LEGENDARY', img: 'images/heroes/alpha.jpg', desc: 'Frontline cybernetic chassis built to absorb terminal impact parameters.' },
+    { id: 'phantom', name: 'Phantom Spectre', role: 'Infiltrator', rarity: 'EPIC', img: 'images/heroes/phantom.jpg', desc: 'Quantum stealth operator focused on structural node extraction.' },
+    { id: 'apex', name: 'Apex Titan', role: 'Enforcer', rarity: 'RARE', img: 'images/heroes/apex.jpg', desc: 'Heavy arms munitions engineer with localized gravity dampening fields.' }
+  ],
+  items: [
+    { id: 'core_mod', name: 'Overclock Module', type: 'Processor', tier: 'TIER III', img: 'images/items/core_mod.jpg', desc: 'Injects transient cycles to local instruction streams, elevating capability parameters.' },
+    { id: 'matrix_shield', name: 'Refractor Aegis', type: 'Shielding', tier: 'TIER II', img: 'images/items/matrix_shield.jpg', desc: 'Coherent energy plane engineered to disperse localized thermal distribution paths.' }
+  ]
+};
 
-document.addEventListener('DOMContentLoaded', async () => {
-  await loadSettings();
-  await loadModelCatalog();
-  await loadWidgetLayout();
-  applyTheme(App.settings.theme);
-  setupNav();
-  setupSettingsPanels();
-  setupThemePicker();
-  setupGameHub();
-  setupCanvas();
-  setupAssistant();
-  setupChat();
-  setupModelSheet();
-  setupVoicePanel();
-  setupCommandsPanel();
-  requestLocationOnBoot(); // Auto-request location on page load
-  setupTasksPanel();
-  setupFloatingAssistantPanel();
-  setupLocationPanel();
-  await loadTasks();
-  await loadCommands();
-  refreshDashboard();
+const panelHistory = [];
+const widgetPositions = {};
+
+document.addEventListener('DOMContentLoaded', () => {
+  initNavigation();
+  initSettingsLayout();
+  initChatEngine();
+  initWorkspaceGrid();
+  initGameHubLayout();
+  loadApplicationConfig();
 });
 
-/* ============ Settings persistence (server-backed) ============ */
-
-async function loadSettings() {
-  try {
-    const res = await fetch('/api/settings');
-    if (res.ok) {
-      const data = await res.json();
-      App.settings = { ...App.settings, ...data };
-    }
-  } catch (e) {
-    // server not reachable yet on first paint — defaults are fine
-  }
-  document.getElementById('lang-select').value = App.settings.lang;
-  document.getElementById('toggle-reduced').checked = App.settings.reducedMotion;
-  document.getElementById('map-provider-select').value = App.settings.mapProvider;
-  document.getElementById('api-model-select').value = App.settings.model;
-  document.getElementById('gemini-model-select').value = App.settings.geminiModel;
-  document.getElementById('groq-model-select').value = App.settings.groqModel;
-  document.body.classList.toggle('reduced-motion', App.settings.reducedMotion);
-
-  document.getElementById('toggle-voice-enabled').checked = App.settings.voiceEnabled;
-  document.getElementById('voice-rate-range').value = App.settings.voiceRate;
-  document.getElementById('voice-rate-value').textContent = App.settings.voiceRate.toFixed(1) + '×';
-  document.getElementById('voice-pitch-range').value = App.settings.voicePitch;
-  document.getElementById('voice-pitch-value').textContent = App.settings.voicePitch.toFixed(1);
-  document.getElementById('toggle-floating-assistant').checked = App.settings.floatingAssistantEnabled;
-
-  const modeLabels = { standard: 'Standard', concise: 'Concise', detailed: 'Detailed' };
-  const modePillLabel = modeLabels[App.settings.responseMode] || 'Standard';
-  document.getElementById('mode-pill').firstChild.textContent = modePillLabel + ' ';
-
-  updateModelPillLabel();
-}
-
-async function saveSettings() {
-  try {
-    const res = await fetch('/api/settings', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(App.settings)
-    });
-    if (!res.ok) {
-      throw new Error(`Server responded ${res.status}`);
-    }
-    return true;
-  } catch (e) {
-    console.error('saveSettings failed:', e);
-    return false;
-  }
-}
-
-async function loadModelCatalog() {
-  try {
-    const res = await fetch('/api/models');
-    if (res.ok) {
-      const data = await res.json();
-      App.modelCatalog = data.models || [];
-    }
-  } catch (e) {
-    console.error('loadModelCatalog failed:', e);
-  }
-}
-
-async function loadWidgetLayout() {
-  try {
-    const res = await fetch('/api/widgets');
-    if (res.ok) {
-      const data = await res.json();
-      if (data && typeof data === 'object') widgetPositions = data;
-    }
-  } catch (e) { /* fresh layout is fine */ }
-}
-
-async function loadTasks() {
-  try {
-    const res = await fetch('/api/tasks');
-    if (res.ok) {
-      const data = await res.json();
-      App.tasks = data.tasks || [];
-    }
-  } catch (e) { /* keep whatever is in memory */ }
-  renderTasks();
-}
-
-async function saveTasks() {
-  try {
-    await fetch('/api/tasks', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tasks: App.tasks })
-    });
-  } catch (e) {
-    console.error('saveTasks failed:', e);
-  }
-}
-
-async function loadCommands() {
-  try {
-    const res = await fetch('/api/commands');
-    if (res.ok) {
-      const data = await res.json();
-      App.commands = data.commands || [];
-    }
-  } catch (e) { /* keep whatever is in memory */ }
-  renderCommands();
-}
-
-async function saveCommands() {
-  try {
-    await fetch('/api/commands', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ commands: App.commands })
-    });
-  } catch (e) {
-    console.error('saveCommands failed:', e);
-  }
-}
-
-/* ============ Theme ============ */
-
-function applyTheme(name) {
-  App.settings.theme = name;
-  const root = document.documentElement;
-  root.setAttribute('data-theme', name === 'frost' ? '' : name);
-  // --theme-hue/sat/light and --accent are now derived purely from CSS
-  // via the [data-theme] selectors, so they always stay in sync with
-  // the actual accent color shown elsewhere in the UI.
-  document.querySelectorAll('.theme-dot').forEach(d => {
-    d.classList.toggle('active', d.dataset.theme === name);
-  });
-}
-
-function setupThemePicker() {
-  document.querySelectorAll('.theme-dot').forEach(dot => {
-    dot.addEventListener('click', () => {
-      applyTheme(dot.dataset.theme);
-      saveSettings();
+/* --- Controller Navigation Core --- */
+function initNavigation() {
+  document.querySelectorAll('.tab-pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-pill').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.view-tab').forEach(t => t.classList.remove('active'));
+      btn.classList.add('active');
+      const target = btn.getAttribute('data-target');
+      const tNode = document.getElementById(target);
+      if (tNode) tNode.classList.add('active');
     });
   });
+
+  const openSettings = document.getElementById('open-settings-btn');
+  const closeSettings = document.getElementById('close-settings-btn');
+  const vMain = document.getElementById('view-main');
+  const vSet = document.getElementById('view-settings');
+
+  if (openSettings && closeSettings && vMain && vSet) {
+    openSettings.addEventListener('click', () => {
+      vMain.classList.remove('active');
+      vSet.classList.add('active');
+    });
+    closeSettings.addEventListener('click', () => {
+      vSet.classList.remove('active');
+      vMain.classList.add('active');
+      // Clear panel sub-layers
+      document.querySelectorAll('.settings-panel').forEach(p => p.classList.remove('active'));
+      panelHistory.length = 0;
+    });
+  }
 }
 
-/* ============ Navigation ============ */
-
-function setupNav() {
-  document.querySelectorAll('.nav-item').forEach(btn => {
-    btn.addEventListener('click', () => switchView(btn.dataset.view));
-  });
-}
-
-function switchView(viewId) {
-  document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === viewId));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.view === viewId));
-  if (viewId === 'view-dashboard') refreshDashboard();
-}
-
-/* ============ Settings slide-over panels ============ */
-
-function setupSettingsPanels() {
-  const overlay = document.getElementById('panel-overlay');
-
-  document.querySelectorAll('.settings-row').forEach(row => {
-    row.addEventListener('click', () => openPanel(row.dataset.panel));
+/* --- Slide Over Sub Panels Fix --- */
+function initSettingsLayout() {
+  document.querySelectorAll('[data-open-panel]').forEach(item => {
+    item.addEventListener('click', () => {
+      const targetId = item.getAttribute('data-open-panel');
+      const panel = document.getElementById(targetId);
+      if (panel) {
+        panel.classList.add('active');
+        panelHistory.push(panel);
+      }
+    });
   });
 
   document.querySelectorAll('[data-close-panel]').forEach(btn => {
-    btn.addEventListener('click', closeAllPanels);
-  });
-  overlay.addEventListener('click', closeAllPanels);
-
-  // General settings
-  document.getElementById('lang-select').addEventListener('change', e => {
-    App.settings.lang = e.target.value;
-    saveSettings();
-  });
-  document.getElementById('toggle-reduced').addEventListener('change', e => {
-    App.settings.reducedMotion = e.target.checked;
-    document.body.classList.toggle('reduced-motion', e.target.checked);
-    saveSettings();
-  });
-
-  // API key panel
-  document.getElementById('save-api-key').addEventListener('click', async () => {
-    App.settings.geminiKey = document.getElementById('gemini-key-input').value.trim();
-    App.settings.geminiModel = document.getElementById('gemini-model-select').value;
-    App.settings.groqKey = document.getElementById('groq-key-input').value.trim();
-    App.settings.groqModel = document.getElementById('groq-model-select').value;
-    App.settings.apiKey = document.getElementById('api-key-input').value.trim();
-    App.settings.model = document.getElementById('api-model-select').value;
-    App.settings.togetherKey = document.getElementById('together-key-input').value.trim();
-    App.settings.togetherModel = document.getElementById('together-model-select').value;
-    App.settings.mistralKey = document.getElementById('mistral-key-input').value.trim();
-    App.settings.mistralModel = document.getElementById('mistral-model-select').value;
-
-    const status = document.getElementById('api-key-status');
-    status.textContent = 'Saving…';
-
-    const ok = await saveSettings();
-
-    if (!ok) {
-      status.textContent = 'Save failed — check the Void server is running and try again.';
-      return;
-    }
-
-    // Verify by reading settings back from the server rather than trusting local state
-    try {
-      const verifyRes = await fetch('/api/settings');
-      const serverSettings = await verifyRes.json();
-      const mismatch =
-        (serverSettings.geminiKey || '') !== App.settings.geminiKey ||
-        (serverSettings.groqKey || '') !== App.settings.groqKey ||
-        (serverSettings.apiKey || '') !== App.settings.apiKey ||
-        (serverSettings.togetherKey || '') !== App.settings.togetherKey ||
-        (serverSettings.mistralKey || '') !== App.settings.mistralKey;
-
-      if (mismatch) {
-        status.textContent = 'Saved, but server shows different values — try reloading the page.';
-        console.warn('Settings mismatch after save:', { sent: App.settings, server: serverSettings });
-      } else {
-        const anyKey = App.settings.geminiKey || App.settings.groqKey || App.settings.apiKey || App.settings.togetherKey || App.settings.mistralKey;
-        status.textContent = anyKey ? 'Keys saved and verified.' : 'No keys set.';
-      }
-    } catch (e) {
-      status.textContent = 'Saved, but could not verify — check Termux for errors.';
-    }
-
-    updateModelPillLabel();
-    refreshDashboard();
-  });
-
-  // Chat settings panel
-  document.getElementById('clear-history-btn').addEventListener('click', async () => {
-    try {
-      await fetch('/api/clear', { method: 'POST' });
-    } catch (e) { /* proceed regardless */ }
-    resetChatView();
-    closeAllPanels();
-  });
-}
-
-function getActiveModelLabel() {
-  // Explicit choice from the unified picker wins, if its key is still configured.
-  const keyMap = { gemini: App.settings.geminiKey, groq: App.settings.groqKey, openrouter: App.settings.apiKey };
-
-  if (App.settings.activeProvider && keyMap[App.settings.activeProvider] && App.settings.activeModel) {
-    const entry = App.modelCatalog.find(m => m.id === App.settings.activeModel && m.provider === App.settings.activeProvider);
-    return entry ? entry.label : App.settings.activeModel;
-  }
-
-  // Fall back to whichever provider is first in the order AND has a key.
-  const order = App.settings.providerOrder || ['gemini', 'groq', 'openrouter'];
-  const modelMap = { gemini: App.settings.geminiModel, groq: App.settings.groqModel, openrouter: App.settings.model };
-  const active = order.find(p => keyMap[p]);
-  if (!active) return null;
-
-  const model = modelMap[active];
-  const entry = App.modelCatalog.find(m => m.id === model && m.provider === active);
-  return entry ? entry.label : model;
-}
-
-function updateModelPillLabel() {
-  const label = getActiveModelLabel();
-  document.getElementById('model-pill').firstChild.textContent = (label || 'No provider') + ' ';
-}
-
-/* ============ Unified model picker sheet ============ */
-
-function setupModelSheet() {
-  const overlay = document.getElementById('model-sheet-overlay');
-  overlay.addEventListener('click', closeModelSheet);
-}
-
-function openModelSheet() {
-  renderModelSheet();
-  document.getElementById('model-sheet').classList.add('open');
-  document.getElementById('model-sheet-overlay').classList.add('open');
-}
-
-function closeModelSheet() {
-  document.getElementById('model-sheet').classList.remove('open');
-  document.getElementById('model-sheet-overlay').classList.remove('open');
-}
-
-function renderModelSheet() {
-  const list = document.getElementById('model-sheet-list');
-  const keyMap = { gemini: App.settings.geminiKey, groq: App.settings.groqKey, openrouter: App.settings.apiKey };
-  const providerLabels = { gemini: 'Gemini', groq: 'Groq', openrouter: 'OpenRouter' };
-
-  list.innerHTML = '';
-
-  if (!App.modelCatalog.length) {
-    list.innerHTML = '<p class="muted small">No models available — check the Void server is running.</p>';
-    return;
-  }
-
-  App.modelCatalog.forEach(m => {
-    const hasKey = !!keyMap[m.provider];
-    const isActive = App.settings.activeProvider === m.provider && App.settings.activeModel === m.id;
-
-    const row = document.createElement('button');
-    row.type = 'button';
-    row.className = 'model-row' + (isActive ? ' active' : '');
-    row.innerHTML = `
-      <div class="model-row-text">
-        <span class="model-row-name">${m.label}</span>
-        <span class="model-row-provider">${providerLabels[m.provider]}${hasKey ? '' : ' · no key set'}</span>
-      </div>
-      <div style="display:flex; align-items:center; gap:10px;">
-        <span class="model-row-dot ${hasKey ? 'ready' : ''}"></span>
-        <svg class="model-row-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-      </div>
-    `;
-    row.addEventListener('click', () => selectModel(m));
-    list.appendChild(row);
-  });
-}
-
-async function selectModel(m) {
-  const keyMap = { gemini: App.settings.geminiKey, groq: App.settings.groqKey, openrouter: App.settings.apiKey };
-  if (!keyMap[m.provider]) {
-    closeModelSheet();
-    addChatMessage('ai error', `No API key set for ${m.provider}. Add one in Settings → API Keys, then pick this model again.`);
-    openPanel('panel-api');
-    return;
-  }
-
-  App.settings.activeProvider = m.provider;
-  App.settings.activeModel = m.id;
-  await saveSettings();
-  updateModelPillLabel();
-  closeModelSheet();
-}
-
-function openPanel(panelId) {
-  document.getElementById(panelId).classList.add('open');
-  document.getElementById('panel-overlay').classList.add('open');
-  if (panelId === 'panel-api') {
-    if (App.settings.geminiKey) document.getElementById('gemini-key-input').value = App.settings.geminiKey;
-    if (App.settings.groqKey) document.getElementById('groq-key-input').value = App.settings.groqKey;
-    if (App.settings.apiKey) document.getElementById('api-key-input').value = App.settings.apiKey;
-    if (App.settings.togetherKey) document.getElementById('together-key-input').value = App.settings.togetherKey;
-    if (App.settings.mistralKey) document.getElementById('mistral-key-input').value = App.settings.mistralKey;
-  }
-}
-
-function closeAllPanels() {
-  document.querySelectorAll('.settings-panel').forEach(p => p.classList.remove('open'));
-  document.getElementById('panel-overlay').classList.remove('open');
-}
-
-/* ============ Dashboard ============ */
-
-/* ============ Gaming Hub (dashboard replacement) ============ */
-
-// Generic structure so new games/entries can be added without touching
-// any rendering logic — just append to this object.
-const GAMES_DB = {
-  mlbb: {
-    name: 'Mobile Legends',
-    short: 'MLBB',
-    characters: [
-      { name: 'Fanny', tag: 'Assassin' },
-      { name: 'Granger', tag: 'Marksman' },
-      { name: 'Lancelot', tag: 'Assassin' },
-      { name: 'Angela', tag: 'Support' },
-      { name: 'Tigreal', tag: 'Tank' },
-      { name: 'Gusion', tag: 'Assassin' },
-      { name: 'Chou', tag: 'Fighter' },
-      { name: 'Ling', tag: 'Assassin' },
-      { name: 'Kagura', tag: 'Mage' },
-      { name: 'Esmeralda', tag: 'Mage/Tank' },
-      { name: 'Lesley', tag: 'Marksman' },
-      { name: 'Karrie', tag: 'Marksman' },
-      { name: 'Khufra', tag: 'Tank' },
-      { name: 'Mathilda', tag: 'Support' },
-      { name: 'Beatrix', tag: 'Marksman' },
-      { name: 'Yu Zhong', tag: 'Fighter' },
-      { name: 'Paquito', tag: 'Fighter' },
-      { name: 'Valentina', tag: 'Mage' },
-      { name: 'Aldous', tag: 'Fighter' },
-      { name: 'Hayabusa', tag: 'Assassin' },
-      { name: 'Saber', tag: 'Assassin' },
-      { name: 'Layla', tag: 'Marksman' },
-      { name: 'Miya', tag: 'Marksman' },
-      { name: 'Alucard', tag: 'Fighter' },
-      { name: 'Zilong', tag: 'Fighter' },
-      { name: 'Fredrinn', tag: 'Fighter/Tank' },
-      { name: 'Joy', tag: 'Assassin' },
-      { name: 'Arlott', tag: 'Fighter' },
-      { name: 'Suyou', tag: 'Assassin' },
-      { name: 'Lukas', tag: 'Fighter' },
-    ],
-    weapons: [
-      { name: 'Blade of Despair', tag: 'Physical' },
-      { name: 'Clock of Destiny', tag: 'Magic' },
-      { name: "Demon Hunter Sword", tag: 'Physical' },
-      { name: 'Holy Crystal', tag: 'Magic' },
-      { name: "Berserker's Fury", tag: 'Physical' },
-      { name: 'Wind of Nature', tag: 'Physical' },
-      { name: 'Immortality', tag: 'Defense' },
-      { name: "Athena's Shield", tag: 'Defense' },
-      { name: 'Antique Cuirass', tag: 'Defense' },
-      { name: 'Brute Force Breastplate', tag: 'Defense' },
-      { name: 'Genius Wand', tag: 'Magic' },
-      { name: 'Lightning Truncheon', tag: 'Magic' },
-      { name: 'Endless Battle', tag: 'Physical' },
-      { name: 'Malefic Roar', tag: 'Physical' },
-      { name: 'Windtalker', tag: 'Physical' },
-      { name: 'Rose Gold Meteor', tag: 'Magic' },
-      { name: 'Blade Armor', tag: 'Defense' },
-      { name: 'Dominance Ice', tag: 'Defense' },
-    ],
-    maps: [
-      { name: 'Land of Dawn', tag: '5v5' },
-      { name: 'Mines of Glory', tag: 'Brawl' },
-    ],
-  },
-};
-
-const HubState = {
-  activeGame: null,
-  activeTab: 'characters',
-};
-
-// Optional generated detail data (from generate_mlbb_data.py).
-// If output/heroes.json or output/items.json don't exist yet, the app
-// just falls back to showing name/tag only — nothing breaks.
-const HubDetails = { heroes: {}, items: {} };
-
-async function loadHubDetails() {
-  try {
-    const heroRes = await fetch('output/heroes.json');
-    if (heroRes.ok) HubDetails.heroes = await heroRes.json();
-  } catch (_) {}
-  try {
-    const itemRes = await fetch('output/items.json');
-    if (itemRes.ok) HubDetails.items = await itemRes.json();
-  } catch (_) {}
-}
-
-function setupGameHub() {
-  renderGameRail();
-  setupInfoTabs();
-  HubState.activeGame = Object.keys(GAMES_DB)[0];
-  loadHubDetails().then(renderInfoGrid);
-  renderInfoGrid();
-  setupInfoDetailSheet();
-}
-
-function closeInfoDetailSheet() {
-  document.getElementById('info-detail-overlay').classList.remove('open');
-  document.getElementById('info-detail-sheet').classList.remove('open');
-}
-
-function setupInfoDetailSheet() {
-  document.getElementById('info-detail-overlay').addEventListener('click', closeInfoDetailSheet);
-  document.getElementById('info-detail-close').addEventListener('click', closeInfoDetailSheet);
-}
-
-function openInfoDetail(entry) {
-  const isWeapon = HubState.activeTab === 'weapons';
-  const data = isWeapon ? HubDetails.items[entry.name] : HubDetails.heroes[entry.name];
-  const content = document.getElementById('info-detail-content');
-
-  if (!data) {
-    content.innerHTML = `
-      <div class="info-detail-hero-head">
-        ${tileHTML(entry.name, entry.tag, 'lg', isWeapon ? 'item' : 'hero')}
-        <div>
-          <div class="sheet-title" style="padding:0;">${entry.name}</div>
-          <p class="info-detail-tag">${entry.tag}</p>
-        </div>
-      </div>
-      <p class="muted small" style="padding:0 4px 16px;">No details added yet for this one.</p>
-    `;
-  } else if (isWeapon) {
-    content.innerHTML = `
-      <div class="info-detail-hero-head">
-        ${tileHTML(data.name, data.category, 'lg', 'item')}
-        <div>
-          <div class="sheet-title" style="padding:0;">${data.name}</div>
-          <p class="info-detail-tag">${data.category || ''}</p>
-        </div>
-      </div>
-      ${renderTileRow('Best for', data.best_for)}
-    `;
-  } else {
-    content.innerHTML = `
-      <div class="info-detail-hero-head">
-        ${tileHTML(data.name, data.role, 'lg', 'hero')}
-        <div>
-          <div class="sheet-title" style="padding:0;">${data.name}</div>
-          <p class="info-detail-tag">${data.role || ''}</p>
-        </div>
-      </div>
-      ${renderTileRow('Countered by', data.counters)}
-      ${renderTileRow('Best build', data.best_build, 'item')}
-      ${data.skill_combo ? `
-        <div class="info-detail-section-label">Skill combo</div>
-        <p class="info-detail-summary">${data.skill_combo}</p>
-      ` : ''}
-      ${renderTileRow('Pairs well with', data.team_combo)}
-    `;
-  }
-
-  document.getElementById('info-detail-overlay').classList.add('open');
-  document.getElementById('info-detail-sheet').classList.add('open');
-}
-
-// Deterministic color from a name, used for icon tile gradients
-function colorFromName(name) {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  const hue = Math.abs(hash) % 360;
-  return hue;
-}
-
-// Simple role glyphs (generic shapes, not game-specific art) to make
-// tiles feel more like a real game UI without using any copyrighted icons.
-const ROLE_ICONS = {
-  'Assassin': '<path d="M5 19L19 5M19 5h-5M19 5v5"/>',
-  'Marksman': '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>',
-  'Mage': '<path d="M12 2l2 5 5 2-5 2-2 5-2-5-5-2 5-2z"/>',
-  'Tank': '<path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z"/>',
-  'Fighter': '<path d="M14.5 17.5L3 6V3h3l11.5 11.5M13 19l3-3M16 16l4 4M19 13l2-2"/>',
-  'Support': '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 1 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>',
-};
-
-function roleIconSVG(tag) {
-  if (!tag) return '';
-  const roleKey = Object.keys(ROLE_ICONS).find(r => tag.includes(r));
-  if (!roleKey) return '';
-  return `<svg class="name-tile-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${ROLE_ICONS[roleKey]}</svg>`;
-}
-
-function tileHTML(name, tag, size = 'sm', type = 'hero') {
-  const hue = colorFromName(name);
-  const initials = name.slice(0, 2).toUpperCase();
-  const sizeClass = size === 'lg' ? 'tile-lg' : size === 'card' ? 'tile-card' : 'tile-sm';
-  const icon = size === 'card' || size === 'lg' ? roleIconSVG(tag) : '';
-  const slug = name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-  const folder = type === 'item' ? 'items' : 'heroes';
-  const imgPath = `images/${folder}/${slug}.png`;
-
-  // Tries to load a real picture from images/heroes/ or images/items/ first.
-  // If that file doesn't exist (404), onerror hides the broken image and
-  // reveals the colored initials tile underneath instead — so a missing
-  // picture never shows a broken-image icon, it just falls back cleanly.
-  return `
-    <div class="name-tile ${sizeClass}" style="background: linear-gradient(135deg, hsl(${hue}, 65%, 45%), hsl(${(hue + 50) % 360}, 60%, 35%));">
-      <img src="${imgPath}" alt="${name}" class="name-tile-img" onerror="this.style.display='none';">
-      ${icon}
-      <span>${initials}</span>
-    </div>
-  `;
-}
-
-function renderTileRow(label, items, type = 'hero') {
-  if (!items || !items.length) return '';
-  return `
-    <div class="info-detail-section-label">${label}</div>
-    <div class="tile-row">
-      ${items.map(item => {
-        const name = typeof item === 'string' ? item : item.name;
-        return `
-          <div class="tile-row-item">
-            ${tileHTML(name, '', 'sm', type)}
-            <span class="tile-row-label">${name}</span>
-          </div>
-        `;
-      }).join('')}
-    </div>
-  `;
-}
-
-function renderGameRail() {
-  const rail = document.getElementById('game-rail');
-  rail.innerHTML = '';
-  Object.entries(GAMES_DB).forEach(([id, game], i) => {
-    const tile = document.createElement('button');
-    tile.className = 'game-tile' + (i === 0 ? ' active' : '');
-    tile.dataset.game = id;
-    tile.innerHTML = `
-      <div class="game-tile-icon">${game.short}</div>
-      <div class="game-tile-label">${game.name}</div>
-    `;
-    tile.addEventListener('click', () => {
-      document.querySelectorAll('.game-tile').forEach(t => t.classList.remove('active'));
-      tile.classList.add('active');
-      HubState.activeGame = id;
-      renderInfoGrid();
+    btn.addEventListener('click', () => {
+      const panel = panelHistory.pop();
+      if (panel) panel.classList.remove('active');
     });
-    rail.appendChild(tile);
   });
-}
 
-function setupInfoTabs() {
-  document.querySelectorAll('.info-tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      document.querySelectorAll('.info-tab').forEach(t => t.classList.remove('active'));
-      tab.classList.add('active');
-      HubState.activeTab = tab.dataset.tab;
-      renderInfoGrid();
+  const saveKeysBtn = document.getElementById('save-keys-btn');
+  if (saveKeysBtn) {
+    saveKeysBtn.addEventListener('click', () => {
+      App.settings.geminiKey = document.getElementById('input-gemini-key')?.value || '';
+      App.settings.groqKey = document.getElementById('input-groq-key')?.value || '';
+      App.settings.apiKey = document.getElementById('input-api-key')?.value || '';
+      App.settings.togetherKey = document.getElementById('input-together-key')?.value || '';
+      App.settings.mistralKey = document.getElementById('input-mistral-key')?.value || '';
+      persistSettingsToServer();
+    });
+  }
+
+  const saveModelsBtn = document.getElementById('save-models-btn');
+  if (saveModelsBtn) {
+    saveModelsBtn.addEventListener('click', () => {
+      App.settings.geminiModel = document.getElementById('input-gemini-model')?.value || 'gemini-2.5-flash';
+      App.settings.groqModel = document.getElementById('input-groq-model')?.value || 'llama-3.3-70b-versatile';
+      App.settings.model = document.getElementById('input-model')?.value || 'meta-llama/llama-3.2-3b-instruct:free';
+      App.settings.togetherModel = document.getElementById('input-together-model')?.value || 'meta-llama/Llama-3.2-70B-Instruct-Turbo';
+      App.settings.mistralModel = document.getElementById('input-mistral-model')?.value || 'mistral-large-latest';
+      persistSettingsToServer();
+    });
+  }
+
+  document.querySelectorAll('.theme-swatch').forEach(swatch => {
+    swatch.addEventListener('click', () => {
+      document.querySelectorAll('.theme-swatch').forEach(s => s.classList.remove('active'));
+      swatch.classList.add('active');
+      const variant = swatch.getAttribute('data-theme');
+      App.settings.theme = variant;
+      document.body.setAttribute('data-theme-variant', variant);
+      persistSettingsToServer();
     });
   });
 }
 
-function renderInfoGrid() {
-  const grid = document.getElementById('info-grid');
-  const game = GAMES_DB[HubState.activeGame];
-  if (!game) { grid.innerHTML = ''; return; }
+/* --- Inference Chat Assistant Engine --- */
+function initChatEngine() {
+  const chatInput = document.getElementById('chat-input');
+  const sendBtn = document.getElementById('send-msg-btn');
+  
+  if (!chatInput || !sendBtn) return;
 
-  const entries = game[HubState.activeTab] || [];
-  if (entries.length === 0) {
-    grid.innerHTML = `<div class="info-grid-empty">No ${HubState.activeTab} listed yet for ${game.name}.</div>`;
-    return;
-  }
+  chatInput.addEventListener('input', () => {
+    chatInput.style.height = 'auto';
+    chatInput.style.height = Math.min(chatInput.scrollHeight, 100) + 'px';
+  });
 
-  const tileType = HubState.activeTab === 'weapons' ? 'item' : 'hero';
-  grid.innerHTML = entries.map(entry => `
-    <div class="info-card">
-      ${tileHTML(entry.name, entry.tag, 'card', tileType)}
-      <div class="info-card-name">${entry.name}</div>
-      <div class="info-card-tag">${entry.tag}</div>
-    </div>
-  `).join('');
+  const triggerSend = () => {
+    const text = chatInput.value.trim();
+    if (!text) return;
+    appendBubbleMessage('user', text);
+    chatInput.value = '';
+    chatInput.style.height = 'auto';
+    dispatchPromptToBackend(text);
+  };
 
-  grid.querySelectorAll('.info-card').forEach((card, i) => {
-    card.addEventListener('click', () => openInfoDetail(entries[i]));
+  sendBtn.addEventListener('click', triggerSend);
+  chatInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      triggerSend();
+    }
+  });
+
+  document.getElementById('util-clear-btn')?.addEventListener('click', () => {
+    fetch('/api/clear', { method: 'POST' })
+      .then(() => {
+        const box = document.getElementById('messages-box');
+        if (box) {
+          box.innerHTML = `
+            <div class="matrix-welcome">
+              <div class="welcome-logo">VOID</div>
+              <p>Localized terminal core connected via micro-services. Memory engine initialized.</p>
+              <div class="welcome-stats monospace" id="welcome-stats-line">INT::${App.stats.totalInteractions} | MSG::0</div>
+            </div>
+          `;
+        }
+      });
   });
 }
 
-/* ---------- Sky band: live weather, automatic on load ---------- */
+function appendBubbleMessage(role, text) {
+  const box = document.getElementById('messages-box');
+  if (!box) return;
 
-// WMO weather codes (from Open-Meteo) bucketed into visual states.
-function weatherCodeToVisualState(code, isDay) {
-  if (code === 0 || code === 1) return isDay ? 'clear-day' : 'clear-night';
-  if (code === 2 || code === 3) return 'clouds';
-  if (code === 45 || code === 48) return 'fog';
-  if ([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82].includes(code)) return 'rain';
-  if ([71, 73, 75, 77, 85, 86].includes(code)) return 'snow';
-  if ([95, 96, 99].includes(code)) return 'storm';
-  return isDay ? 'clear-day' : 'clear-night';
+  const bNode = document.createElement('div');
+  bNode.className = `chat-bubble ${role}`;
+  
+  const stamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const label = role === 'user' ? 'USER::NODE' : 'VOID::CORE';
+
+  bNode.innerHTML = `
+    <div class="bubble-meta">${label} // ${stamp}</div>
+    <div class="bubble-body">${parseMarkdownText(text)}</div>
+  `;
+  
+  box.appendChild(bNode);
+  box.scrollTop = box.scrollHeight;
+  
+  App.stats.messages++;
+  updateStatusDashboardLines();
 }
 
-function setupDashboard() {}
-
-function refreshDashboard() {
-  // The old dashboard's stat cards were replaced by the gaming hub.
-  // Usage stats are still tracked in App.stats for potential future use,
-  // but there's no longer a dashboard UI surface to push them into —
-  // kept as a safe no-op so existing call sites don't break.
+function parseMarkdownText(raw) {
+  return raw
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/```([\s\S]+?)```/g, '<pre><code>$1</code></pre>')
+    .replace(/`([^`]+?)`/g, '<code>$1</code>')
+    .replace(/\*\*([\s\S]+?)\*\*/g, '<strong>$1</strong>');
 }
 
-/* ============ Canvas widgets (free drag + pan/zoom) ============ */
+function dispatchPromptToBackend(prompt) {
+  const placeholder = document.createElement('div');
+  placeholder.className = 'chat-bubble assistant';
+  placeholder.innerHTML = `<div class="bubble-meta">VOID::CORE // COMPUTING...</div><div class="bubble-body muted monospace">Executing pipeline loop...</div>`;
+  
+  const box = document.getElementById('messages-box');
+  box.appendChild(placeholder);
+  box.scrollTop = box.scrollHeight;
 
-let widgetSeq = 0;
-let widgetPositions = {}; // id -> {x, y}
+  fetch('/api/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt })
+  })
+  .then(r => r.json())
+  .then(data => {
+    placeholder.remove();
+    if (data.response) {
+      appendBubbleMessage('assistant', data.response);
+    } else if (data.error) {
+      appendBubbleMessage('assistant', `!! PIPELINE_ERROR: ${data.error}`);
+    }
+  })
+  .catch(() => {
+    placeholder.remove();
+    appendBubbleMessage('assistant', '!! NETWORK_TIMEOUT: Transmission core drops links.');
+  });
+}
 
-const SNAP_GRID = 16; // pixels for grid snapping
+/* --- Drag Drop Workspace Widgets --- */
+function initWorkspaceGrid() {
+  document.querySelectorAll('[data-add-widget]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const type = btn.getAttribute('data-add-widget');
+      spawnWorkspaceWidget(type);
+    });
+  });
+}
 
-function setupCanvas() {
-  document.getElementById('canvas-add').addEventListener('click', openWidgetMenu);
-  document.getElementById('canvas-empty-add').addEventListener('click', openWidgetMenu);
-  document.getElementById('canvas-clear').addEventListener('click', () => {
-    document.getElementById('canvas-board').innerHTML = '';
-    widgetPositions = {};
-    persistWidgetLayout();
+function spawnWorkspaceWidget(type) {
+  if (widgetPositions[type]) return; // Already deployed
+
+  const board = document.getElementById('widget-board');
+  const card = document.createElement('div');
+  card.className = 'dashboard-widget';
+  card.id = `widget-${type}`;
+  
+  let title = 'MODULE';
+  let bodyHTML = '';
+  let w = 240, h = 160;
+
+  if (type === 'sys-stats') {
+    title = 'SYSTEM MONITORS';
+    bodyHTML = `
+      <div class="sys-metric-row">
+        <div class="sys-meta"><span>CPU THREADS</span><span class="val" id="cpu-val">24%</span></div>
+        <div class="sys-progress-bar"><div class="sys-progress-fill" id="cpu-fill" style="width: 24%"></div></div>
+      </div>
+      <div class="sys-metric-row">
+        <div class="sys-meta"><span>MEM STORAGE</span><span class="val" id="mem-val">4.1 GB</span></div>
+        <div class="sys-progress-bar"><div class="sys-progress-fill" id="mem-fill" style="width: 55%"></div></div>
+      </div>
+    `;
+  } else if (type === 'quick-notes') {
+    title = 'SCRATCHPAD';
+    bodyHTML = `<textarea id='widget-notes-text' placeholder='Store continuous variables...'></textarea>`;
+    w = 260; h = 200;
+  } else if (type === 'world-clock') {
+    title = 'CHRONO CLOCK';
+    bodyHTML = `<div class='clock-display' id='live-chrono'>00:00:00</div><div class='date-display' id='live-date'>LOADING</div>`;
+    w = 200; h = 120;
+  }
+
+  card.innerHTML = `
+    <div class="widget-head"><span>${title}</span><button class="widget-close" data-remove="${type}">×</button></div>
+    <div class="widget-body">${bodyHTML}</div>
+  `;
+  
+  card.style.width = w + 'px';
+  card.style.height = h + 'px';
+  
+  board.appendChild(card);
+  placeWidgetElement(card, type, 40, 40);
+  bindDragLogic(card, type);
+
+  card.querySelector('[data-remove]').addEventListener('click', () => {
+    card.remove();
+    delete widgetPositions[type];
     updateCanvasEmptyState();
   });
 
-  setupWidgetMenu();
-  setupCanvasPanZoom();
-
-  // Load existing widgets from persisted positions, or add defaults on first load
-  if (Object.keys(widgetPositions).length === 0) {
-    addTimeWidget();
-    addWeatherWidget();
-    persistWidgetLayout();
-  } else {
-    // Re-render widgets from saved positions
-    document.getElementById('canvas-board').innerHTML = '';
-    if (widgetPositions['widget-time']) addTimeWidget();
-    if (widgetPositions['widget-weather']) addWeatherWidget();
-  }
+  if (type === 'world-clock') startChronographLoop();
   updateCanvasEmptyState();
 }
 
-function setupWidgetMenu() {
-  const overlay = document.getElementById('widget-menu-overlay');
-  const menu = document.getElementById('widget-menu');
-  const list = document.getElementById('widget-menu-list');
-
-  // Widget type definitions
-  const widgetTypes = [
-    { id: 'time', label: 'Clock', desc: 'Current time' },
-    { id: 'weather', label: 'Weather', desc: 'Local forecast' },
-  ];
-
-  list.innerHTML = widgetTypes.map(w => `
-    <button class="widget-menu-item" data-widget-type="${w.id}">
-      <strong>${w.label}</strong>
-      <span class="widget-menu-desc">${w.desc}</span>
-    </button>
-  `).join('');
-
-  list.addEventListener('click', (e) => {
-    const btn = e.target.closest('.widget-menu-item');
-    if (!btn) return;
-    const type = btn.dataset.widgetType;
-    closeWidgetMenu();
-    if (type === 'time') addTimeWidget();
-    else if (type === 'weather') addWeatherWidget();
-    updateCanvasEmptyState();
-  });
-
-  overlay.addEventListener('click', closeWidgetMenu);
+function placeWidgetElement(el, type, x, y) {
+  el.style.left = x + 'px';
+  el.style.top = y + 'px';
+  widgetPositions[type] = { x, y };
 }
 
-function openWidgetMenu() {
-  document.getElementById('widget-menu-overlay').classList.add('open');
-  document.getElementById('widget-menu').classList.add('open');
-}
+function bindDragLogic(el, type) {
+  const head = el.querySelector('.widget-head');
+  let active = false, currentX, currentY, initialX, initialY, xOffset = widgetPositions[type].x, yOffset = widgetPositions[type].y;
 
-function closeWidgetMenu() {
-  document.getElementById('widget-menu-overlay').classList.remove('open');
-  document.getElementById('widget-menu').classList.remove('open');
-}
+  head.addEventListener('touchstart', dragStart, {passive: false});
+  document.addEventListener('touchend', dragEnd, {passive: false});
+  document.addEventListener('touchmove', drag, {passive: false});
 
-/* ---- pan & zoom ---- */
+  head.addEventListener('mousedown', dragStart);
+  document.addEventListener('mouseup', dragEnd);
+  document.addEventListener('mousemove', drag);
 
-function setupCanvasPanZoom() {
-  const viewport = document.getElementById('canvas-viewport');
-  const board = document.getElementById('canvas-board');
-  const panBtn = document.getElementById('canvas-pan-toggle');
+  function dragStart(e) {
+    if (e.type === "touchstart") {
+      initialX = e.touches[0].clientX - xOffset;
+      initialY = e.touches[0].clientY - yOffset;
+    } else {
+      initialX = e.clientX - xOffset;
+      initialY = e.clientY - yOffset;
+    }
+    if (e.target === head || head.contains(e.target)) active = true;
+  }
 
-  applyCanvasTransform();
+  function dragEnd() {
+    if (!active) return;
+    initialX = currentX;
+    initialY = currentY;
+    active = false;
+  }
 
-  panBtn.addEventListener('click', () => {
-    App.canvasView.panMode = !App.canvasView.panMode;
-    panBtn.classList.toggle('active', App.canvasView.panMode);
-  });
-
-  document.getElementById('canvas-zoom-in').addEventListener('click', () => zoomCanvas(1.2));
-  document.getElementById('canvas-zoom-out').addEventListener('click', () => zoomCanvas(1 / 1.2));
-  document.getElementById('canvas-fit').addEventListener('click', () => {
-    App.canvasView = { x: 0, y: 0, scale: 1, panMode: App.canvasView.panMode };
-    applyCanvasTransform();
-  });
-
-  let isPanning = false;
-  let startX = 0, startY = 0, startViewX = 0, startViewY = 0;
-
-  viewport.addEventListener('pointerdown', (e) => {
-    if (e.target.closest('.widget-card')) return; // widget drag handles its own
-    isPanning = true;
-    viewport.classList.add('panning');
-    startX = e.clientX;
-    startY = e.clientY;
-    startViewX = App.canvasView.x;
-    startViewY = App.canvasView.y;
-    viewport.setPointerCapture(e.pointerId);
-  });
-
-  viewport.addEventListener('pointermove', (e) => {
-    if (!isPanning) return;
-    App.canvasView.x = startViewX + (e.clientX - startX);
-    App.canvasView.y = startViewY + (e.clientY - startY);
-    applyCanvasTransform();
-  });
-
-  ['pointerup', 'pointercancel'].forEach(evt => {
-    viewport.addEventListener(evt, () => {
-      isPanning = false;
-      viewport.classList.remove('panning');
-    });
-  });
-
-  viewport.addEventListener('wheel', (e) => {
+  function drag(e) {
+    if (!active) return;
     e.preventDefault();
-    const factor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
-    zoomCanvas(factor);
-  }, { passive: false });
-}
-
-function zoomCanvas(factor) {
-  const next = Math.min(2.5, Math.max(0.4, App.canvasView.scale * factor));
-  App.canvasView.scale = next;
-  applyCanvasTransform();
-}
-
-function applyCanvasTransform() {
-  const board = document.getElementById('canvas-board');
-  const { x, y, scale } = App.canvasView;
-  board.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
-}
-
-/* ---- widget persistence ---- */
-
-async function persistWidgetLayout() {
-  try {
-    await fetch('/api/widgets', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(widgetPositions)
-    });
-  } catch (e) { /* non-critical */ }
-}
-
-function placeWidget(card, id, defaultX, defaultY) {
-  const pos = widgetPositions[id] || { x: defaultX, y: defaultY };
-  widgetPositions[id] = pos;
-  card.style.left = pos.x + 'px';
-  card.style.top = pos.y + 'px';
-  makeWidgetDraggable(card, id);
-}
-
-function snapToGrid(value, gridSize = SNAP_GRID) {
-  return Math.round(value / gridSize) * gridSize;
-}
-
-function snapToEdges(x, y, card) {
-  const threshold = 16;
-  const board = document.getElementById('canvas-board');
-  const allCards = board.querySelectorAll('.widget-card:not(.dragging)');
-  let snappedX = x;
-  let snappedY = y;
-
-  const rect = card.getBoundingClientRect();
-  const cardW = rect.width;
-  const cardH = rect.height;
-
-  allCards.forEach(other => {
-    const otherRect = other.getBoundingClientRect();
-    const otherX = parseFloat(other.style.left) || 0;
-    const otherY = parseFloat(other.style.top) || 0;
-    const otherW = otherRect.width;
-    const otherH = otherRect.height;
-
-    // Snap X: left edge to other left, or right edge to other right
-    if (Math.abs(x - otherX) < threshold) snappedX = otherX;
-    if (Math.abs((x + cardW) - (otherX + otherW)) < threshold) snappedX = otherX + otherW - cardW;
-
-    // Snap Y: top edge to other top, or bottom to other bottom
-    if (Math.abs(y - otherY) < threshold) snappedY = otherY;
-    if (Math.abs((y + cardH) - (otherY + otherH)) < threshold) snappedY = otherY + otherH - cardH;
-  });
-
-  return { x: snapToGrid(snappedX), y: snapToGrid(snappedY) };
-}
-
-function makeWidgetDraggable(card, id) {
-  const handle = card.querySelector('.widget-head');
-  if (!handle) return;
-
-  let dragging = false;
-  let startX = 0, startY = 0, startLeft = 0, startTop = 0;
-
-  handle.addEventListener('pointerdown', (e) => {
-    if (e.target.closest('.widget-close')) return;
-    dragging = true;
-    card.classList.add('dragging');
-    startX = e.clientX;
-    startY = e.clientY;
-    startLeft = parseFloat(card.style.left) || 0;
-    startTop = parseFloat(card.style.top) || 0;
-    handle.setPointerCapture(e.pointerId);
-    e.stopPropagation();
-  });
-
-  handle.addEventListener('pointermove', (e) => {
-    if (!dragging) return;
-    const scale = App.canvasView.scale || 1;
-    const dx = (e.clientX - startX) / scale;
-    const dy = (e.clientY - startY) / scale;
-    let newLeft = startLeft + dx;
-    let newTop = startTop + dy;
-
-    // Apply snapping (grid + edges)
-    const snapped = snapToEdges(newLeft, newTop, card);
-    newLeft = snapped.x;
-    newTop = snapped.y;
-
-    card.style.left = newLeft + 'px';
-    card.style.top = newTop + 'px';
-    widgetPositions[id] = { x: newLeft, y: newTop };
-  });
-
-  ['pointerup', 'pointercancel'].forEach(evt => {
-    handle.addEventListener(evt, () => {
-      if (!dragging) return;
-      dragging = false;
-      card.classList.remove('dragging');
-      persistWidgetLayout();
-    });
-  });
+    if (e.type === "touchmove") {
+      currentX = e.touches[0].clientX - initialX;
+      currentY = e.touches[0].clientY - initialY;
+    } else {
+      currentX = e.clientX - initialX;
+      currentY = e.clientY - initialY;
+    }
+    xOffset = currentX;
+    yOffset = currentY;
+    el.style.left = currentX + "px";
+    el.style.top = currentY + "px";
+    widgetPositions[type] = { x: currentX, y: currentY };
+  }
 }
 
 function updateCanvasEmptyState() {
-  const board = document.getElementById('canvas-board');
-  document.getElementById('canvas-empty').classList.toggle('hidden', board.children.length > 0);
+  const msg = document.getElementById('canvas-empty-msg');
+  if (!msg) return;
+  msg.style.display = Object.keys(widgetPositions).length === 0 ? 'block' : 'none';
 }
 
-function requestLocationOnBoot() {
-  if (!navigator.geolocation) return;
-  navigator.geolocation.getCurrentPosition(
-    (pos) => {
-      App.location = {
-        lat: pos.coords.latitude,
-        lon: pos.coords.longitude,
-        label: null
-      };
-      // Optionally update weather/weather widget if already exists
-      const weatherWidget = document.getElementById('widget-weather');
-      if (weatherWidget) updateWeatherWidget();
-    },
-    () => { /* permission denied or error, silently continue */ }
-  );
+function startChronographLoop() {
+  const track = () => {
+    const clock = document.getElementById('live-chrono');
+    const dateLine = document.getElementById('live-date');
+    if (!clock) return;
+    const d = new Date();
+    clock.innerText = d.toTimeString().split(' ')[0];
+    dateLine.innerText = d.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' }).toUpperCase();
+    setTimeout(track, 1000);
+  };
+  track();
 }
 
-function addTimeWidget() {
-  const board = document.getElementById('canvas-board');
-  const card = document.createElement('div');
-  card.className = 'widget-card';
-  card.id = 'widget-time';
-  card.innerHTML = `
-    <div class="widget-head">
-      <span>TIME</span>
-      <button class="widget-close" data-remove="widget-time">&times;</button>
-    </div>
-    <div class="widget-clock-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></div>
-    <div class="widget-time-value" id="widget-time-value">--:--:--</div>
-    <div class="widget-time-sub" id="widget-time-sub"></div>
-  `;
-  board.appendChild(card);
-  placeWidget(card, 'widget-time', 60, 60);
-  card.querySelector('[data-remove]').addEventListener('click', () => {
-    card.remove();
-    delete widgetPositions['widget-time'];
-    persistWidgetLayout();
-    updateCanvasEmptyState();
+/* --- GameHub Data View Handler (Images Fix) --- */
+function initGameHubLayout() {
+  const hBoard = document.getElementById('tab-canvas');
+  if (!hBoard) return;
+
+  // Append GameHub Base Container if not defined in static DOM templates
+  let hubContainer = document.querySelector('.gamehub-container');
+  if (!hubContainer) {
+    const canvasWrap = document.querySelector('.canvas-container');
+    if (canvasWrap) {
+      const divider = document.createElement('div');
+      divider.className = 'sheet-divider';
+      canvasWrap.appendChild(divider);
+
+      hubContainer = document.createElement('div');
+      hubContainer.className = 'gamehub-container';
+      hubContainer.innerHTML = `
+        <div class="gamehub-tabs">
+          <button class="gamehub-tab-btn active" data-hub-tab="heroes">HERO FILES</button>
+          <button class="gamehub-tab-btn" data-hub-tab="items">ITEM CORES</button>
+        </div>
+        <div class="gamehub-content-view active" id="hub-view-heroes">
+          <div class="hub-grid" id="heroes-grid-target"></div>
+        </div>
+        <div class="gamehub-content-view" id="hub-view-items">
+          <div class="hub-grid" id="items-grid-target"></div>
+        </div>
+      `;
+      canvasWrap.appendChild(hubContainer);
+    }
+  }
+
+  document.querySelectorAll('.gamehub-tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.gamehub-tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.gamehub-content-view').forEach(v => v.classList.remove('active'));
+      btn.classList.add('active');
+      const target = document.getElementById(`hub-view-${btn.getAttribute('data-hub-tab')}`);
+      if (target) target.classList.add('active');
+    });
   });
-  tickTimeWidget();
-  updateCanvasEmptyState();
+
+  renderGameHubGridElements();
 }
 
-function tickTimeWidget() {
-  const valueEl = document.getElementById('widget-time-value');
-  const subEl = document.getElementById('widget-time-sub');
-  if (!valueEl) return;
-  const now = new Date();
-  valueEl.textContent = now.toLocaleTimeString();
-  const offsetMin = -now.getTimezoneOffset();
-  const sign = offsetMin >= 0 ? '+' : '-';
-  const abs = Math.abs(offsetMin);
-  subEl.textContent = `UTC${sign}${String(Math.floor(abs / 60)).padStart(2, '0')}:${String(abs % 60).padStart(2, '0')}`;
-  setTimeout(tickTimeWidget, 1000);
-}
+function renderGameHubGridElements() {
+  const hGrid = document.getElementById('heroes-grid-target');
+  const iGrid = document.getElementById('items-grid-target');
 
-async function addWeatherWidget() {
-  const board = document.getElementById('canvas-board');
-  const card = document.createElement('div');
-  card.className = 'widget-card';
-  card.id = 'widget-weather';
-  card.innerHTML = `
-    <div class="widget-head">
-      <span>WEATHER</span>
-      <button class="widget-close" data-remove="widget-weather">&times;</button>
-    </div>
-    <div class="widget-weather-loc" id="weather-loc"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg> <span>Allow location to see local weather</span></div>
-    <div id="weather-body"></div>
-  `;
-  board.appendChild(card);
-  placeWidget(card, 'widget-weather', 60, 260);
-  card.querySelector('[data-remove]').addEventListener('click', () => {
-    card.remove();
-    delete widgetPositions['widget-weather'];
-    persistWidgetLayout();
-    updateCanvasEmptyState();
-  });
-  updateCanvasEmptyState();
-
-  if (App.location) loadWeatherForWidget();
-}
-
-async function loadWeatherForWidget() {
-  const locEl = document.getElementById('weather-loc');
-  const bodyEl = document.getElementById('weather-body');
-  if (!locEl || !bodyEl || !App.location) return;
-
-  locEl.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg> <span>${App.location.label}</span>`;
-  bodyEl.innerHTML = `<div class="muted small">Loading…</div>`;
-
-  try {
-    const res = await fetch(`/api/weather?lat=${App.location.lat}&lon=${App.location.lon}`);
-    if (!res.ok) throw new Error('weather fetch failed');
-    const w = await res.json();
-
-    bodyEl.innerHTML = `
-      <div class="widget-weather-main">
-        <div class="widget-weather-icon"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M17.5 19a4.5 4.5 0 1 0-1.41-8.78 6 6 0 0 0-11.59 2.78A4 4 0 0 0 5 21h12.5z"></path></svg></div>
-        <div>
-          <div class="widget-weather-temp">${w.temp}°C</div>
-          <div class="widget-weather-desc">${w.description}</div>
+  if (hGrid) {
+    hGrid.innerHTML = GameHubData.heroes.map(hero => `
+      <div class="hub-card" onclick="openGameHubDetailItem('heroes', '${hero.id}')">
+        <div class="hub-card-media">
+          <img class="hub-card-img" src="${hero.img}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' style=\'fill:%23222\'><rect width=\'100\' height=\'100\'/></svg>'">
+          <span class="hub-card-badge">${hero.rarity}</span>
+        </div>
+        <div class="hub-card-overlay">
+          <div class="hub-card-title">${hero.name}</div>
+          <div class="hub-card-sub">${hero.role}</div>
         </div>
       </div>
-      <div class="widget-weather-grid">
-        <div class="widget-weather-stat"><div class="widget-weather-stat-label">Feels like</div><div class="widget-weather-stat-value">${w.feels_like}°C</div></div>
-        <div class="widget-weather-stat"><div class="widget-weather-stat-label">Humidity</div><div class="widget-weather-stat-value">${w.humidity}%</div></div>
-        <div class="widget-weather-stat"><div class="widget-weather-stat-label">Wind</div><div class="widget-weather-stat-value">${w.wind_speed} m/s</div></div>
-        <div class="widget-weather-stat"><div class="widget-weather-stat-label">Pressure</div><div class="widget-weather-stat-value">${w.pressure} hPa</div></div>
+    `).join('');
+  }
+
+  if (iGrid) {
+    iGrid.innerHTML = GameHubData.items.map(item => `
+      <div class="hub-card" onclick="openGameHubDetailItem('items', '${item.id}')">
+        <div class="hub-card-media">
+          <img class="hub-card-img" src="${item.img}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' style=\'fill:%23222\'><rect width=\'100\' height=\'100\'/></svg>'">
+          <span class="hub-card-badge">${item.tier}</span>
+        </div>
+        <div class="hub-card-overlay">
+          <div class="hub-card-title">${item.name}</div>
+          <div class="hub-card-sub">${item.type}</div>
+        </div>
       </div>
-    `;
-  } catch (e) {
-    bodyEl.innerHTML = `<div class="muted small">Couldn't load weather right now.</div>`;
+    `).join('');
   }
 }
 
-/* ============ Assistant (voice) ============ */
+function openGameHubDetailItem(collection, id) {
+  const dataset = GameHubData[collection].find(x => x.id === id);
+  if (!dataset) return;
 
-let recognizer = null;
-let isListening = false;
-
-// Deep links for a fixed set of common apps. Each can take an optional
-// query, used for search/play-style opens. Android intercepts these specific
-// URL patterns and routes them to the matching installed app; if the app
-// isn't installed, most fall back to opening the equivalent website instead.
-const APP_DEEP_LINKS = {
-  youtube: (q) => q
-    ? `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`
-    : `https://www.youtube.com`,
-  maps: (q) => q
-    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`
-    : `https://www.google.com/maps`,
-  spotify: (q) => q
-    ? `https://open.spotify.com/search/${encodeURIComponent(q)}`
-    : `https://open.spotify.com`,
-  whatsapp: (q) => q
-    ? `https://wa.me/?text=${encodeURIComponent(q)}`
-    : `https://web.whatsapp.com`,
-  instagram: () => `https://www.instagram.com`,
-  gmail: () => `https://mail.google.com`,
-  camera: () => null // handled specially below — no web deep link for this one
-};
-
-const OPEN_TAG_PATTERN = /\[\[OPEN:([a-z]+):([^\]]*)\]\]/i;
-
-/**
- * Looks for a [[OPEN:app:query]] tag in the AI's reply, fires the matching
- * deep link if found, and returns the reply text with the tag stripped out
- * so it's never shown to the user.
- */
-function processOpenAppTags(reply) {
-  const match = reply.match(OPEN_TAG_PATTERN);
-  if (!match) return reply;
-
-  const appId = match[1].toLowerCase();
-  const query = match[2].trim();
-  const cleanedReply = reply.replace(OPEN_TAG_PATTERN, '').trim();
-
-  if (appId === 'camera') {
-    // No universal web deep link for the camera app — best effort via a
-    // capture-intent file input click, which on most phones opens the
-    // camera picker directly.
-    const tempInput = document.createElement('input');
-    tempInput.type = 'file';
-    tempInput.accept = 'image/*';
-    tempInput.capture = 'environment';
-    tempInput.click();
-    return cleanedReply;
-  }
-
-  const linkBuilder = APP_DEEP_LINKS[appId];
-  if (linkBuilder) {
-    const url = linkBuilder(query);
-    if (url) window.open(url, '_blank');
-  }
-
-  return cleanedReply;
+  appendBubbleMessage('assistant', `**[${dataset.name}]** Profile Loaded:\n${dataset.desc}\nConfiguration Path Source: \`${dataset.img}\``);
 }
 
-function resolveSpeechLang() {
-  // Explicit setting always wins.
-  if (App.settings.lang === 'ar') return 'ar-SA';
-  if (App.settings.lang === 'en') return 'en-US';
+/* --- Persistent Network Configuration Handlers --- */
+function loadApplicationConfig() {
+  fetch('/api/settings')
+    .then(r => r.json())
+    .then(config => {
+      if (!config) return;
+      App.settings = { ...App.settings, ...config };
+      
+      // Update form field variables
+      if(document.getElementById('input-gemini-key')) document.getElementById('input-gemini-key').value = App.settings.geminiKey;
+      if(document.getElementById('input-groq-key')) document.getElementById('input-groq-key').value = App.settings.groqKey;
+      if(document.getElementById('input-api-key')) document.getElementById('input-api-key').value = App.settings.apiKey;
+      if(document.getElementById('input-together-key')) document.getElementById('input-together-key').value = App.settings.togetherKey;
+      if(document.getElementById('input-mistral-key')) document.getElementById('input-mistral-key').value = App.settings.mistralKey;
 
-  // 'auto' — follow the device/browser's own language rather than
-  // hardcoding English, so speech recognition actually listens for
-  // the language the person is likely to speak.
-  const deviceLang = navigator.language || navigator.userLanguage || 'en-US';
-  if (deviceLang.toLowerCase().startsWith('ar')) return 'ar-SA';
-  return deviceLang;
+      if(document.getElementById('input-gemini-model')) document.getElementById('input-gemini-model').value = App.settings.geminiModel;
+      if(document.getElementById('input-groq-model')) document.getElementById('input-groq-model').value = App.settings.groqModel;
+      if(document.getElementById('input-model')) document.getElementById('input-model').value = App.settings.model;
+
+      if (App.settings.theme) {
+        document.body.setAttribute('data-theme-variant', App.settings.theme);
+        const activeSwatch = document.querySelector(`.theme-swatch[data-theme="${App.settings.theme}"]`);
+        if (activeSwatch) activeSwatch.classList.add('active');
+      }
+      updateStatusDashboardLines();
+    }).catch(() => {});
 }
 
-function setupAssistant() {
-  const orb = document.getElementById('orb-btn');
-  const hint = document.getElementById('assistant-hint');
-  const line = document.getElementById('assistant-line');
-  const pillMic = document.getElementById('pill-mic');
-  const pillStatus = document.getElementById('pill-status');
-
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-
-  orb.addEventListener('click', () => {
-    if (!SpeechRecognition) {
-      line.textContent = 'Voice input isn\'t supported in this browser. Try the Chat tab instead.';
-      return;
-    }
-
-    if (isListening) {
-      recognizer.stop();
-      return;
-    }
-
-    recognizer = new SpeechRecognition();
-    recognizer.lang = resolveSpeechLang();
-    recognizer.interimResults = false;
-
-    recognizer.onstart = () => {
-      isListening = true;
-      orb.classList.add('listening');
-      hint.textContent = 'Listening…';
-      pillMic.classList.add('active');
-      pillStatus.classList.add('active');
-      pillStatus.querySelector('span:last-child')?.remove();
-      pillStatus.lastChild.textContent = ' Listening';
-    };
-
-    recognizer.onresult = async (event) => {
-      const transcript = event.results[0][0].transcript;
-      line.textContent = `"${transcript}"`;
-      const reply = await askVoid(transcript);
-      const cleanedReply = processOpenAppTags(reply);
-      line.textContent = cleanedReply;
-      speak(cleanedReply);
-    };
-
-    recognizer.onerror = () => {
-      line.textContent = 'Didn\'t catch that — try again.';
-    };
-
-    recognizer.onend = () => {
-      isListening = false;
-      orb.classList.remove('listening');
-      hint.textContent = 'Tap to activate';
-      pillMic.classList.remove('active');
-      pillStatus.classList.remove('active');
-    };
-
-    recognizer.start();
+function persistSettingsToServer() {
+  fetch('/api/settings', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(App.settings)
+  }).then(() => {
+    updateStatusDashboardLines();
   });
 }
 
-function speak(text) {
-  if (!window.speechSynthesis || !App.settings.voiceEnabled) return;
-  const utter = new SpeechSynthesisUtterance(text);
-  utter.lang = resolveSpeechLang();
-  utter.rate = App.settings.voiceRate || 1.0;
-  utter.pitch = App.settings.voicePitch || 1.0;
-
-  if (App.settings.voiceName) {
-    const voices = window.speechSynthesis.getVoices();
-    const match = voices.find(v => v.name === App.settings.voiceName);
-    if (match) utter.voice = match;
-  }
-
-  const orb = document.getElementById('orb-btn');
-  const hint = document.getElementById('assistant-hint');
-
-  utter.onstart = () => {
-    orb?.classList.add('speaking');
-    if (hint) hint.textContent = 'Void is speaking…';
-  };
-  utter.onend = () => {
-    orb?.classList.remove('speaking');
-    if (hint) hint.textContent = 'Tap to activate';
-  };
-  utter.onerror = () => {
-    orb?.classList.remove('speaking');
-  };
-
-  window.speechSynthesis.speak(utter);
+function updateStatusDashboardLines() {
+  const line = document.getElementById('welcome-stats-line');
+  if (line) line.innerText = `INT::${App.stats.totalInteractions} | MSG::${App.stats.messages}`;
+  const indicator = document.getElementById('active-model-indicator');
+  if (indicator) indicator.innerText = (App.settings.model.split('/')[1] || App.settings.model).toUpperCase();
 }
-
-/* ============ Voice settings panel ============ */
-
-function setupVoicePanel() {
-  const enabledToggle = document.getElementById('toggle-voice-enabled');
-  const voiceSelect = document.getElementById('voice-name-select');
-  const rateRange = document.getElementById('voice-rate-range');
-  const rateValue = document.getElementById('voice-rate-value');
-  const pitchRange = document.getElementById('voice-pitch-range');
-  const pitchValue = document.getElementById('voice-pitch-value');
-  const testBtn = document.getElementById('voice-test-btn');
-
-  enabledToggle.addEventListener('change', e => {
-    App.settings.voiceEnabled = e.target.checked;
-    saveSettings();
-  });
-
-  rateRange.addEventListener('input', e => {
-    App.settings.voiceRate = parseFloat(e.target.value);
-    rateValue.textContent = App.settings.voiceRate.toFixed(1) + '×';
-  });
-  rateRange.addEventListener('change', () => saveSettings());
-
-  pitchRange.addEventListener('input', e => {
-    App.settings.voicePitch = parseFloat(e.target.value);
-    pitchValue.textContent = App.settings.voicePitch.toFixed(1);
-  });
-  pitchRange.addEventListener('change', () => saveSettings());
-
-  function populateVoices() {
-    if (!window.speechSynthesis) return;
-    const voices = window.speechSynthesis.getVoices();
-    if (!voices.length) return;
-    voiceSelect.innerHTML = '<option value="">Default</option>';
-    voices.forEach(v => {
-      const opt = document.createElement('option');
-      opt.value = v.name;
-      opt.textContent = `${v.name} (${v.lang})`;
-      voiceSelect.appendChild(opt);
-    });
-    voiceSelect.value = App.settings.voiceName || '';
-  }
-
-  if (window.speechSynthesis) {
-    populateVoices();
-    window.speechSynthesis.addEventListener('voiceschanged', populateVoices);
-  }
-
-  voiceSelect.addEventListener('change', e => {
-    App.settings.voiceName = e.target.value;
-    saveSettings();
-  });
-
-  testBtn.addEventListener('click', () => {
-    const wasEnabled = App.settings.voiceEnabled;
-    App.settings.voiceEnabled = true;
-    speak('This is what Void sounds like.');
-    App.settings.voiceEnabled = wasEnabled;
-  });
-}
-
-/* ============ Custom commands panel ============ */
-
-function setupCommandsPanel() {
-  document.getElementById('add-command-btn').addEventListener('click', async () => {
-    const labelInput = document.getElementById('command-label-input');
-    const actionInput = document.getElementById('command-action-input');
-    const label = labelInput.value.trim();
-    const action = actionInput.value.trim();
-    if (!label || !action) return;
-
-    App.commands.push({ id: 'cmd_' + Date.now(), label, action });
-    labelInput.value = '';
-    actionInput.value = '';
-    renderCommands();
-    await saveCommands();
-  });
-}
-
-function renderCommands() {
-  const list = document.getElementById('commands-list');
-  const empty = document.getElementById('commands-empty');
-  list.innerHTML = '';
-
-  if (!App.commands.length) {
-    list.appendChild(empty);
-    empty.classList.remove('hidden');
-    return;
-  }
-
-  App.commands.forEach(cmd => {
-    const row = document.createElement('div');
-    row.className = 'command-row';
-    row.innerHTML = `
-      <div class="command-text">
-        <span class="command-label"></span>
-        <span class="command-action"></span>
-      </div>
-      <button class="row-remove" aria-label="Remove">&times;</button>
-    `;
-    row.querySelector('.command-label').textContent = cmd.label;
-    row.querySelector('.command-action').textContent = cmd.action;
-    row.querySelector('.row-remove').addEventListener('click', async () => {
-      App.commands = App.commands.filter(c => c.id !== cmd.id);
-      renderCommands();
-      await saveCommands();
-    });
-    row.addEventListener('click', (e) => {
-      if (e.target.closest('.row-remove')) return;
-      runCommand(cmd);
-    });
-    list.appendChild(row);
-  });
-}
-
-function runCommand(cmd) {
-  const action = cmd.action.trim();
-  if (/^https?:\/\//i.test(action)) {
-    window.open(action, '_blank');
-  } else {
-    // Not a URL — treat as a quick prompt to Void instead of executing arbitrary system commands.
-    switchView('view-chat');
-    document.getElementById('user-input').value = action;
-  }
-}
-
-/* ============ Task management panel ============ */
-
-function setupTasksPanel() {
-  const input = document.getElementById('task-input');
-  document.getElementById('add-task-btn').addEventListener('click', async () => {
-    const text = input.value.trim();
-    if (!text) return;
-    App.tasks.push({ id: 'task_' + Date.now(), text, done: false });
-    input.value = '';
-    renderTasks();
-    await saveTasks();
-  });
-  input.addEventListener('keydown', e => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      document.getElementById('add-task-btn').click();
-    }
-  });
-}
-
-function renderTasks() {
-  const list = document.getElementById('tasks-list');
-  const empty = document.getElementById('tasks-empty');
-  list.innerHTML = '';
-
-  if (!App.tasks.length) {
-    list.appendChild(empty);
-    empty.classList.remove('hidden');
-    return;
-  }
-
-  App.tasks.forEach(task => {
-    const row = document.createElement('div');
-    row.className = 'task-row';
-    row.innerHTML = `
-      <button class="task-check ${task.done ? 'done' : ''}" aria-label="Toggle done">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
-      </button>
-      <span class="task-text ${task.done ? 'done' : ''}"></span>
-      <button class="row-remove" aria-label="Remove">&times;</button>
-    `;
-    row.querySelector('.task-text').textContent = task.text;
-    row.querySelector('.task-check').addEventListener('click', async () => {
-      task.done = !task.done;
-      renderTasks();
-      await saveTasks();
-    });
-    row.querySelector('.row-remove').addEventListener('click', async () => {
-      App.tasks = App.tasks.filter(t => t.id !== task.id);
-      renderTasks();
-      await saveTasks();
-    });
-    list.appendChild(row);
-  });
-}
-
-/* ============ Floating assistant panel ============ */
-
-function setupFloatingAssistantPanel() {
-  document.getElementById('toggle-floating-assistant').addEventListener('change', e => {
-    App.settings.floatingAssistantEnabled = e.target.checked;
-    saveSettings();
-  });
-}
-
-/* ============ Shared "ask Void" used by both voice + chat ============ */
-
-async function askVoid(message, image) {
-  App.stats.queries++;
-  App.stats.messages++;
-  App.stats.totalInteractions++;
-
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 50000);
-
-    const res = await fetch('/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        message,
-        image_base64: image ? image.base64 : undefined,
-        image_mime: image ? image.mime : undefined,
-        openrouter_key: App.settings.apiKey,
-        model: App.settings.model,
-        gemini_key: App.settings.geminiKey,
-        gemini_model: App.settings.geminiModel,
-        groq_key: App.settings.groqKey,
-        groq_model: App.settings.groqModel,
-        provider_order: App.settings.providerOrder,
-        active_provider: App.settings.activeProvider,
-        active_model: App.settings.activeModel,
-        lang: App.settings.lang,
-        location: App.location,
-        response_mode: App.settings.responseMode
-      }),
-      signal: controller.signal
-    });
-    clearTimeout(timeoutId);
-
-    if (!res.ok) {
-      const errData = await res.json().catch(() => null);
-      throw new Error(errData?.reply || `Request failed: ${res.status}`);
-    }
-    const data = await res.json();
-    App.stats.replies++;
-    App.stats.messages++;
-    App.stats.totalInteractions++;
-    refreshDashboard();
-    return data.reply || 'No response received.';
-  } catch (err) {
-    if (err.name === 'AbortError') {
-      return 'No response after 50s. The model may be overloaded — try again.';
-    }
-    return err.message || 'Connection lost. Check that the Void server is running.';
-  }
-}
-
-/* ============ Chat ============ */
-
-function setupChat() {
-  const composer = document.getElementById('composer');
-  const input = document.getElementById('user-input');
-  const chatBox = document.getElementById('chat-box');
-  const attachBtn = document.getElementById('attach-btn');
-  const imageInput = document.getElementById('image-input');
-  const previewRow = document.getElementById('image-preview-row');
-  const previewThumb = document.getElementById('image-preview-thumb');
-  const previewRemove = document.getElementById('image-preview-remove');
-
-  let pendingImage = null; // { base64, mime, dataUrl }
-
-  attachBtn.addEventListener('click', () => imageInput.click());
-
-  imageInput.addEventListener('change', () => {
-    const file = imageInput.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = reader.result;
-      const base64 = dataUrl.split(',')[1];
-      pendingImage = { base64, mime: file.type || 'image/jpeg', dataUrl };
-      previewThumb.src = dataUrl;
-      previewRow.style.display = 'block';
-      attachBtn.classList.add('has-image');
-    };
-    reader.readAsDataURL(file);
-    imageInput.value = '';
-  });
-
-  previewRemove.addEventListener('click', () => {
-    pendingImage = null;
-    previewRow.style.display = 'none';
-    attachBtn.classList.remove('has-image');
-  });
-
-  document.getElementById('model-pill').addEventListener('click', () => openModelSheet());
-  document.getElementById('chat-new-btn').addEventListener('click', resetChatView);
-  document.getElementById('chat-history-btn').addEventListener('click', () => openPanel('panel-chat'));
-
-  const modePill = document.getElementById('mode-pill');
-  const modes = ['standard', 'concise', 'detailed'];
-  const modeLabels = { standard: 'Standard', concise: 'Concise', detailed: 'Detailed' };
-  modePill.addEventListener('click', () => {
-    const i = modes.indexOf(App.settings.responseMode);
-    App.settings.responseMode = modes[(i + 1) % modes.length];
-    modePill.firstChild.textContent = modeLabels[App.settings.responseMode] + ' ';
-    saveSettings();
-  });
-
-  input.addEventListener('input', () => {
-    input.style.height = 'auto';
-    input.style.height = Math.min(input.scrollHeight, 120) + 'px';
-  });
-
-  input.addEventListener('keydown', e => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      composer.requestSubmit();
-    }
-  });
-
-  composer.addEventListener('submit', async e => {
-    e.preventDefault();
-    const text = input.value.trim();
-    const image = pendingImage;
-    if (!text && !image) return;
-
-    addChatMessage('user', text, image ? image.dataUrl : null);
-    input.value = '';
-    input.style.height = 'auto';
-    pendingImage = null;
-    previewRow.style.display = 'none';
-    attachBtn.classList.remove('has-image');
-
-    const typingRow = addTypingIndicator();
-    const reply = await askVoid(text, image);
-    typingRow.remove();
-    const cleanedReply = processOpenAppTags(reply);
-    const isError = /^(ERROR|HTTP \d|No API key|All configured providers failed|Connection lost|The model took too long|Network issue)/i.test(cleanedReply);
-    addChatMessage(isError ? 'ai error' : 'ai', cleanedReply);
-  });
-}
-
-function addChatMessage(role, text, imageDataUrl) {
-  const chatBox = document.getElementById('chat-box');
-  const row = document.createElement('div');
-  row.className = 'msg ' + role;
-  const bubble = document.createElement('div');
-  bubble.className = 'msg-bubble';
-  if (imageDataUrl) {
-    const img = document.createElement('img');
-    img.src = imageDataUrl;
-    img.className = 'msg-image';
-    bubble.appendChild(img);
-  }
-  if (text) {
-    const textNode = document.createElement('div');
-    textNode.textContent = text;
-    bubble.appendChild(textNode);
-  }
-  row.appendChild(bubble);
-  chatBox.appendChild(row);
-  chatBox.scrollTop = chatBox.scrollHeight;
-  return row;
-}
-
-function addTypingIndicator() {
-  const chatBox = document.getElementById('chat-box');
-  const row = document.createElement('div');
-  row.className = 'msg ai';
-  row.innerHTML = '<div class="msg-bubble typing"><span></span><span></span><span></span></div>';
-  chatBox.appendChild(row);
-  chatBox.scrollTop = chatBox.scrollHeight;
-  return row;
-}
-
-function resetChatView() {
-  const chatBox = document.getElementById('chat-box');
-  chatBox.innerHTML = '';
-  addChatMessage('ai', 'Conversation cleared. What would you like to talk about?');
-  App.stats.conversations++;
-}
-
-/* ============ Location / GPS ============ */
-
-function setupLocationPanel() {
-  document.getElementById('request-location-btn').addEventListener('click', requestLocation);
-  document.getElementById('map-provider-select').addEventListener('change', e => {
-    App.settings.mapProvider = e.target.value;
-    saveSettings();
-  });
-}
-
-function requestLocation() {
-  const statusSub = document.getElementById('location-status-sub');
-  if (!navigator.geolocation) {
-    statusSub.textContent = 'Not supported in this browser.';
-    return;
-  }
-  statusSub.textContent = 'Requesting…';
-
-  navigator.geolocation.getCurrentPosition(
-    async (pos) => {
-      const lat = pos.coords.latitude;
-      const lon = pos.coords.longitude;
-      let label = `${lat.toFixed(3)}, ${lon.toFixed(3)}`;
-
-      try {
-        const res = await fetch(`/api/reverse-geocode?lat=${lat}&lon=${lon}`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data.label) label = data.label;
-        }
-      } catch (e) { /* fall back to coordinates */ }
-
-      App.location = { lat, lon, label };
-      statusSub.textContent = `Allowed — ${label}`;
-      addMapWidgetIfMissing();
-      loadWeatherForWidget();
-      refreshDashboard();
-    },
-    (err) => {
-      statusSub.textContent = 'Permission denied or unavailable.';
-    },
-    { enableHighAccuracy: true, timeout: 10000 }
-  );
-}
-
-function addMapWidgetIfMissing() {
-  if (document.getElementById('widget-map') || !App.location) return;
-  const board = document.getElementById('canvas-board');
-  const card = document.createElement('div');
-  card.className = 'widget-card';
-  card.id = 'widget-map';
-  const { lat, lon } = App.location;
-  card.innerHTML = `
-    <div class="widget-head">
-      <span>YOUR LOCATION</span>
-      <button class="widget-close" data-remove="widget-map">&times;</button>
-    </div>
-    <div class="widget-map-frame">
-      <iframe loading="lazy" src="https://www.openstreetmap.org/export/embed.html?bbox=${lon-0.01}%2C${lat-0.01}%2C${lon+0.01}%2C${lat+0.01}&layer=mapnik&marker=${lat}%2C${lon}"></iframe>
-    </div>
-  `;
-  board.appendChild(card);
-  placeWidget(card, 'widget-map', 60, 460);
-  card.querySelector('[data-remove]').addEventListener('click', () => {
-    card.remove();
-    delete widgetPositions['widget-map'];
-    persistWidgetLayout();
-    updateCanvasEmptyState();
-  });
-  updateCanvasEmptyState();
-}
-
-function openDirections(destinationQuery) {
-  if (!App.location) {
-    return 'I need your location first — open Settings → Location & GPS and allow access, then ask me again.';
-  }
-  const { lat, lon } = App.location;
-  let url;
-  if (App.settings.mapProvider === 'osm') {
-    url = `https://www.openstreetmap.org/directions?from=${lat}%2C${lon}&to=${encodeURIComponent(destinationQuery)}`;
-  } else {
-    url = `https://www.google.com/maps/dir/?api=1&origin=${lat},${lon}&destination=${encodeURIComponent(destinationQuery)}&travelmode=walking`;
-  }
-  window.open(url, '_blank');
-  return `Opening directions to "${destinationQuery}" from your current location.`;
-}
-
-// Make available to inline-ish usage if extended later
-window.VoidApp = { askVoid, openDirections, requestLocation };
-
-
