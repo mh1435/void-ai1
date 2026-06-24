@@ -1,5 +1,5 @@
 /* =========================================================
-   VOID // AI STUDIO SUITE SINGLE PAGE APPLICATION CONTROLLER
+   VOID // TERMINAL CORE SINGLE PAGE APPLICATION CONTROLLER
    ========================================================= */
 
 const App = {
@@ -86,7 +86,6 @@ function initTopNavRouting() {
 function initSubRouting() {
   document.querySelectorAll('.sub-nav-btn:not(.gamehub-tab-btn)').forEach(btn => {
     btn.addEventListener('click', () => {
-      // Keep GameHub separate, target sub-tabs
       const parentView = btn.closest('.view-tab');
       parentView.querySelectorAll('.sub-nav-btn:not(.gamehub-tab-btn)').forEach(b => b.classList.remove('active'));
       parentView.querySelectorAll('.sub-view-content-wrap > .sub-tab').forEach(t => t.classList.remove('active'));
@@ -141,7 +140,6 @@ function initSettingsLayout() {
 function initChatEngine() {
   const chatInput = document.getElementById('chat-input');
   const sendBtn = document.getElementById('send-msg-btn');
-  const clearBtn = document.getElementById('clear-chat-btn');
   if (!chatInput || !sendBtn) return;
 
   const inputContainer = document.querySelector('.chat-input-container');
@@ -171,14 +169,6 @@ function initChatEngine() {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       triggerSend();
-    }
-  });
-
-  clearBtn?.addEventListener('click', () => {
-    const msgBox = document.getElementById('messages-box');
-    if (msgBox) {
-      msgBox.innerHTML = '';
-      appendSystemEventLog('warn', 'Chat window active thread session completely purged.');
     }
   });
 
@@ -242,8 +232,8 @@ function appendBubbleMessage(role, text) {
   }
 
   bNode.innerHTML = `
-    <div class="bubble-meta">${label} // ${stamp}</div>
-    <div class="bubble-body">${renderedBody}</div>
+    <div class="bubble-meta monospace">${label} // ${stamp}</div>
+    <div class="bubble-body monospace">${renderedBody}</div>
   `;
   box.appendChild(bNode);
   box.scrollTop = box.scrollHeight;
@@ -259,14 +249,13 @@ function appendBubbleMessage(role, text) {
   const currentHour = new Date().getHours();
   App.stats.hourlyTraffic[currentHour]++;
 
-  updateStatusDashboardLines();
   refreshAnalyticsVisuals();
 }
 
 function dispatchPromptToBackend(prompt) {
   const placeholder = document.createElement('div');
   placeholder.className = 'chat-bubble assistant';
-  placeholder.innerHTML = `<div class="bubble-meta">VOID::CORE // INTERFACES</div><div class="bubble-body muted monospace">Computing network loop via active node profile context...</div>`;
+  placeholder.innerHTML = `<div class="bubble-meta monospace">VOID::CORE // INTERFACES</div><div class="bubble-body muted monospace">Computing network loop via active node profile context...</div>`;
   
   const box = document.getElementById('messages-box');
   box.appendChild(placeholder);
@@ -333,7 +322,7 @@ function spawnWorkspaceWidget(type) {
     <div class="widget-body">${bodyHTML}</div>
   `;
   board.appendChild(card);
-  placeWidgetElement(card, type, 20, 20);
+  placeWidgetElement(card, type, Math.floor(Math.random() * 100) + 20, Math.floor(Math.random() * 100) + 20);
   bindDragLogic(card, type);
   
   appendSystemEventLog('info', `Spawned monitoring widget workspace node: [${type.toUpperCase()}]`);
@@ -376,7 +365,6 @@ function updateCanvasEmptyState() {
 function initGameHubLayout() {
   document.querySelectorAll('.gamehub-tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      // Un-highlight all gamehub tabs, hide views
       const parentView = btn.closest('.view-tab');
       parentView.querySelectorAll('.gamehub-tab-btn').forEach(b => b.classList.remove('active'));
       parentView.querySelectorAll('.gamehub-content-view').forEach(v => v.classList.remove('active'));
@@ -412,12 +400,12 @@ function renderGameHubGridElements(heroesArr, itemsArr) {
       return `
         <div class="hub-card" data-tier="${hero.rarity}" onclick="openGameHubDetailItem('heroes', '${hero.id}')">
           <div class="hub-card-media">
-            <img class="hub-card-img" src="${hero.img}" alt="${hero.name}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' style=\'fill:%23111\'><rect width=\'100\' height=\'100\'/><text x=\'50%\' y=\'50%\' dominant-baseline=\'middle\' text-anchor=\'middle\' fill=\'%23555\' font-family=\'monospace\' font-size=\'11\'>${hero.name}</text></svg>'">
-            <span class="hub-card-badge">${processedBadgeText}</span>
+            <img class="hub-card-img" src="${hero.img}" alt="${hero.name}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' style=\'fill:%23000\'><rect width=\'100\' height=\'100\' stroke=\'%23333\' stroke-width=\'1\'/><text x=\'50%\' y=\'50%\' dominant-baseline=\'middle\' text-anchor=\'middle\' fill=\'%23666\' font-family=\'monospace\' font-size=\'9\'>${hero.name}</text></svg>'">
+            <span class="hub-card-badge monospace">${processedBadgeText}</span>
           </div>
           <div class="hub-card-overlay">
-            <div class="hub-card-title">${hero.name}</div>
-            <div class="hub-card-sub">${hero.role}</div>
+            <div class="hub-card-title monospace">${hero.name}</div>
+            <div class="hub-card-sub monospace">${hero.role}</div>
           </div>
         </div>
       `;
@@ -428,12 +416,12 @@ function renderGameHubGridElements(heroesArr, itemsArr) {
     iGrid.innerHTML = itemsArr.map(item => `
       <div class="hub-card" data-tier="${item.tier}" onclick="openGameHubDetailItem('items', '${item.id}')">
         <div class="hub-card-media">
-          <img class="hub-card-img" src="${item.img}" alt="${item.name}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' style=\'fill:%23111\'><rect width=\'100\' height=\'100\'/><text x=\'50%\' y=\'50%\' dominant-baseline=\'middle\' text-anchor=\'middle\' fill=\'%23555\' font-family=\'monospace\' font-size=\'10\'>${item.name}</text></svg>'">
-          <span class="hub-card-badge">${item.tier}</span>
+          <img class="hub-card-img" src="${item.img}" alt="${item.name}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' style=\'fill:%23000\'><rect width=\'100\' height=\'100\' stroke=\'%23333\' stroke-width=\'1\'/><text x=\'50%\' y=\'50%\' dominant-baseline=\'middle\' text-anchor=\'middle\' fill=\'%23666\' font-family=\'monospace\' font-size=\'9\'>${item.name}</text></svg>'">
+          <span class="hub-card-badge monospace">${item.tier}</span>
         </div>
         <div class="hub-card-overlay">
-          <div class="hub-card-title">${item.name}</div>
-          <div class="hub-card-sub">${item.type}</div>
+          <div class="hub-card-title monospace">${item.name}</div>
+          <div class="hub-card-sub monospace">${item.type}</div>
         </div>
       </div>
     `).join('');
@@ -520,10 +508,10 @@ function renderPromptLibraryGrid(subset) {
   target.innerHTML = dataset.map(p => `
     <div class="prompt-card">
       <div class="prompt-card-cat monospace">${p.category.toUpperCase()}</div>
-      <div class="prompt-card-title">${p.title}</div>
-      <div class="prompt-card-text">${p.text}</div>
+      <div class="prompt-card-title monospace">${p.title}</div>
+      <div class="prompt-card-text monospace">${p.text}</div>
       <div class="prompt-card-actions">
-        <button class="prompt-action-pill" onclick="executePromptTemplatePayload('${p.id}')">RUN SCRIPT</button>
+        <button class="prompt-action-pill monospace" onclick="executePromptTemplatePayload('${p.id}')">RUN SCRIPT</button>
       </div>
     </div>
   `).join('');
@@ -547,7 +535,7 @@ function initLogsFeed() {
   document.getElementById('clear-logs-btn')?.addEventListener('click', () => {
     const stream = document.getElementById('logs-stream-target');
     if (stream) {
-      stream.innerHTML = `<div class="log-row text-dim">[SYSTEM CLEARED BUFFER] -- Stream completely purged of older operations traces.</div>`;
+      stream.innerHTML = `<div class="log-row text-dimmonospace">[SYSTEM CLEARED BUFFER] -- Stream completely purged of older operations traces.</div>`;
     }
   });
 }
@@ -589,7 +577,7 @@ function refreshAnalyticsVisuals() {
         return `
           <div class="bar-col-wrap">
             <div class="bar-fill-seg" style="height: ${perc}%" data-tooltip="${val} reqs"></div>
-            <span class="bar-stamp-lbl">${hh}h</span>
+            <span class="bar-stamp-lbl monospace">${hh}h</span>
           </div>
         `;
       }).join('')}
@@ -625,7 +613,9 @@ function loadApplicationConfig() {
 
       document.body.setAttribute('data-theme-variant', App.settings.theme);
 
-      updateStatusDashboardLines();
+      updateModelQuickSelectUIState();
+      updateModelQuickSelectUIStateModels();
+      updateModelQuickSelectUIStatePreferences();
       updateModelQuickSelectUI();
       appendSystemEventLog('info', 'Application config profile successfully fetched and parsed into memory.');
     }).catch(() => {
@@ -641,6 +631,7 @@ function persistSettingsToServer() {
   });
 }
 
-function updateStatusDashboardLines() {
-  // Stats line mapping in top-bar or sub views
-}
+// These empty functions are preserved to ensure your API payload flow mappings do not crash during execution sequences:
+function updateModelSelectUIState() {}
+function updateModelSelectUIStateModels() {}
+function updateModelSelectUIStatePreferences() {}
